@@ -143,6 +143,7 @@ class NeuronAiMessageMapper
         return match ($contentType) {
             AttachmentContentType::URL => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
             AttachmentContentType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
+            default => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
         };
     }
 }

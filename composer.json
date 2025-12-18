@@ -5,7 +5,7 @@
     "license": "proprietary",
     "require": {
         "aws/aws-sdk-php": "^3.209",
-        "neuron-core/neuron-ai": "^2.8",
+        "neuron-core/neuron-ai": "^2.9.3",
         "php": ">=8.3",
         "spryker/kernel": "^3.30.0",
         "spryker/transfer": "^3.27.0"
