@@ -8,8 +8,12 @@
 namespace SprykerTest\Client\AiFoundation\NeuronAi;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
+use NeuronAI\Chat\Attachments\Attachment;
+use NeuronAI\Chat\Enums\AttachmentContentType;
+use NeuronAI\Chat\Enums\AttachmentType;
 use NeuronAI\Chat\Messages\AssistantMessage;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Providers\AIProviderInterface;
@@ -17,6 +21,8 @@ use Spryker\Client\AiFoundation\AiFoundationClient;
 use Spryker\Client\AiFoundation\AiFoundationClientInterface;
 use Spryker\Client\AiFoundation\AiFoundationConfig;
 use Spryker\Client\AiFoundation\AiFoundationFactory;
+use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapper;
+use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
@@ -347,7 +353,7 @@ class AiFoundationClientTest extends Unit
 
         $neuronAiAdapter = new NeuronVendorAiAdapter(
             providerResolver: $mockProviderResolver,
-            messageMapper: new NeuronAiMessageMapper(),
+            messageMapper: $this->createNeuronAiMessageMapper(),
             aiConfigurations: $config->getAiConfigurations(),
         );
 
@@ -416,7 +422,7 @@ class AiFoundationClientTest extends Unit
 
         $neuronAiAdapter = new NeuronVendorAiAdapter(
             providerResolver: $mockProviderResolver,
-            messageMapper: new NeuronAiMessageMapper(),
+            messageMapper: $this->createNeuronAiMessageMapper(),
             aiConfigurations: $config->getAiConfigurations(),
         );
 
@@ -451,5 +457,301 @@ class AiFoundationClientTest extends Unit
             ]);
 
         return $config;
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenPromptMessageHasSingleDocumentAttachmentWhenPromptingThenAttachmentIsMappedCorrectly(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithDocumentAttachment();
+        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenPromptMessageHasSingleImageAttachmentWhenPromptingThenAttachmentIsMappedCorrectly(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithImageAttachment();
+        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::IMAGE, AttachmentContentType::BASE64);
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenPromptMessageHasMultipleAttachmentsWhenPromptingThenAllAttachmentsAreMappedCorrectly(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithMultipleAttachments();
+        $mockProvider = $this->createMockProviderExpectingMultipleAttachments();
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenPromptMessageHasAttachmentWithMediaTypeWhenPromptingThenMediaTypeIsMappedCorrectly(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithAttachmentWithMediaType();
+        $mockProvider = $this->createMockProviderExpectingAttachmentWithMediaType();
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenProviderReturnsMessageWithAttachmentsWhenPromptingThenAttachmentsAreMappedToResponse(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningAttachments();
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $client->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertCount(1, $promptResponseTransfer->getMessage()->getAttachments());
+        $this->assertAttachmentMatchesExpectedValues($promptResponseTransfer->getMessage()->getAttachments()->offsetGet(0));
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenAttachmentHasUnknownTypeWhenMappingThenDefaultsToDocumentType(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithUnknownAttachmentType();
+        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testGivenAttachmentHasUnknownContentTypeWhenMappingThenDefaultsToUrlContentType(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithUnknownContentType();
+        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $client = $this->createClientWithMockedProvider($mockProvider);
+
+        // Act
+        $client->prompt($promptRequestTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithDocumentAttachment(): PromptRequestTransfer
+    {
+        $attachmentTransfer = $this->createDocumentAttachment();
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithImageAttachment(): PromptRequestTransfer
+    {
+        $attachmentTransfer = $this->createImageAttachment();
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithMultipleAttachments(): PromptRequestTransfer
+    {
+        $documentAttachment = $this->createDocumentAttachment();
+        $imageAttachment = $this->createImageAttachment();
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($documentAttachment)->addAttachment($imageAttachment);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithIdAttachment(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)->setContent('document-id-123')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_ID);
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithAttachmentWithMediaType(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE)->setContent('https://example.com/image.png')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL)->setMediaType('image/png');
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithUnknownAttachmentType(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())->setType('unknown_type')->setContent('https://example.com/document.pdf')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL);
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\PromptRequestTransfer
+     */
+    protected function createPromptRequestWithUnknownContentType(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)->setContent('https://example.com/document.pdf')->setContentType('unknown_content_type');
+        $promptMessageTransfer = (new PromptMessageTransfer())->setContent(static::TEST_USER_MESSAGE)->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\AttachmentTransfer
+     */
+    protected function createDocumentAttachment(): AttachmentTransfer
+    {
+        return (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)->setContent('https://example.com/document.pdf')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\AttachmentTransfer
+     */
+    protected function createImageAttachment(): AttachmentTransfer
+    {
+        return (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE)->setContent('base64EncodedImageData')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64);
+    }
+
+    /**
+     * @param \NeuronAI\Chat\Enums\AttachmentType $expectedType
+     * @param \NeuronAI\Chat\Enums\AttachmentContentType $expectedContentType
+     *
+     * @return \NeuronAI\Providers\AIProviderInterface|\PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function createMockProviderExpectingAttachment(AttachmentType $expectedType, AttachmentContentType $expectedContentType): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages) use ($expectedType, $expectedContentType): bool {
+            $attachments = $messages[0]->getAttachments();
+            $this->assertCount(1, $attachments);
+            $this->assertSame($expectedType, $attachments[0]->type);
+            $this->assertSame($expectedContentType, $attachments[0]->contentType);
+
+            return true;
+        }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
+
+        return $mockProvider;
+    }
+
+    /**
+     * @return \NeuronAI\Providers\AIProviderInterface|\PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function createMockProviderExpectingMultipleAttachments(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages): bool {
+            $attachments = $messages[0]->getAttachments();
+            $this->assertCount(2, $attachments);
+            $this->assertSame(AttachmentType::DOCUMENT, $attachments[0]->type);
+            $this->assertSame(AttachmentType::IMAGE, $attachments[1]->type);
+
+            return true;
+        }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
+
+        return $mockProvider;
+    }
+
+    /**
+     * @return \NeuronAI\Providers\AIProviderInterface|\PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function createMockProviderExpectingAttachmentWithMediaType(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages): bool {
+            $attachments = $messages[0]->getAttachments();
+            $this->assertCount(1, $attachments);
+            $this->assertSame('image/png', $attachments[0]->mediaType);
+
+            return true;
+        }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
+
+        return $mockProvider;
+    }
+
+    /**
+     * @return \NeuronAI\Providers\AIProviderInterface|\PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function createMockProviderReturningAttachments(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+
+        $attachment = new Attachment(type: AttachmentType::IMAGE, content: 'https://example.com/result.png', contentType: AttachmentContentType::URL, mediaType: 'image/png');
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+        $assistantMessage->addAttachment($attachment);
+        $mockProvider->method('chat')->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\AttachmentTransfer $attachmentTransfer
+     *
+     * @return void
+     */
+    protected function assertAttachmentMatchesExpectedValues(AttachmentTransfer $attachmentTransfer): void
+    {
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE, $attachmentTransfer->getType());
+        $this->assertSame('https://example.com/result.png', $attachmentTransfer->getContent());
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL, $attachmentTransfer->getContentType());
+        $this->assertSame('image/png', $attachmentTransfer->getMediaType());
+    }
+
+    protected function createNeuronAiMessageMapper(): NeuronAiMessageMapper
+    {
+        $transferJsonSchemaMapper = $this->createTransferJsonSchemaMapper();
+
+        return new NeuronAiMessageMapper($transferJsonSchemaMapper);
+    }
+
+    protected function createTransferJsonSchemaMapper(): TransferJsonSchemaMapperInterface
+    {
+        return new TransferJsonSchemaMapper();
     }
 }

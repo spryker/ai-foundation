@@ -7,18 +7,28 @@
 
 namespace Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper;
 
+use ArrayObject;
 use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
+use InvalidArgumentException;
 use NeuronAI\Chat\Attachments\Attachment;
 use NeuronAI\Chat\Enums\AttachmentContentType;
 use NeuronAI\Chat\Enums\AttachmentType;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\UserMessage;
+use ReflectionClass;
+use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
+use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 
 class NeuronAiMessageMapper
 {
+    public function __construct(
+        protected TransferJsonSchemaMapperInterface $transferJsonSchemaMapper,
+    ) {
+    }
+
     /**
      * @param \Generated\Shared\Transfer\PromptMessageTransfer $promptMessageTransfer
      *
@@ -145,5 +155,75 @@ class NeuronAiMessageMapper
             AttachmentContentType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
             default => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
         };
+    }
+
+    /**
+     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
+     *
+     * @return array<string, mixed>
+     */
+    public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array
+    {
+        return $this->transferJsonSchemaMapper->buildJsonSchema($structuredResponseTransfer);
+    }
+
+    /**
+     * @template T of \Spryker\Shared\Kernel\Transfer\AbstractTransfer
+     *
+     * @phpstan-return T
+     *
+     * @param \NeuronAI\Chat\Messages\Message $message
+     * @param T $structuredResponseTransfer
+     *
+     * @return \Spryker\Shared\Kernel\Transfer\AbstractTransfer
+     */
+    public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer
+    {
+        $content = $this->transferJsonSchemaMapper->extractJsonFromText($message->getContent());
+
+        $structuredResponseTransfer->fromArray($content, true);
+
+        $this->assertTransferPropertiesAreFilled($structuredResponseTransfer, $message->getContent());
+
+        return $structuredResponseTransfer;
+    }
+
+    protected function assertTransferPropertiesAreFilled(AbstractTransfer $transfer, string $responseContent): void
+    {
+        $reflectionClass = new ReflectionClass($transfer);
+        $transferMetadataProperty = $reflectionClass->getProperty('transferMetadata');
+        $transferMetadataProperty->setAccessible(true);
+        $metadata = $transferMetadataProperty->getValue($transfer);
+
+        $missingProperties = [];
+
+        foreach ($metadata as $propertyMetadata) {
+            $propertyName = $propertyMetadata['name_underscore'];
+            $getterMethod = 'get' . str_replace('_', '', ucwords($propertyMetadata['name_underscore'], '_'));
+
+            if (!method_exists($transfer, $getterMethod)) {
+                continue;
+            }
+
+            $propertyValue = $transfer->$getterMethod();
+
+            if ($propertyValue === null) {
+                $missingProperties[] = $propertyName;
+            }
+
+            if ($propertyMetadata['is_collection'] && $propertyValue instanceof ArrayObject && $propertyValue->count() === 0) {
+                $missingProperties[] = sprintf('%s (empty collection)', $propertyName);
+            }
+        }
+
+        if ($missingProperties !== []) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Failed to map structured response to transfer. Missing or empty properties: %s. Response content: %s',
+                    implode(', ', $missingProperties),
+                    $responseContent,
+                ),
+            );
+        }
     }
 }

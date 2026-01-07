@@ -22,9 +22,14 @@ interface AiFoundationClientInterface
      * - Resolves the AI provider instance based on the configuration.
      * - Applies system prompt from configuration if available.
      * - Maps the prompt message from `PromptRequestTransfer.promptMessage` to provider-specific format.
-     * - Executes the chat request with the AI provider.
-     * - Maps the provider's response to `PromptResponseTransfer`.
-     * - Returns the AI provider's response.
+     * - If `PromptRequestTransfer.structuredMessage` is provided, executes the chat request with structured response format.
+     * - Retries up to `PromptRequestTransfer.maxRetries` times if request fails (defaults to 1).
+     * - Maps the provider's structured response to `PromptResponseTransfer.structuredMessage` when schema is provided.
+     * - The type of `PromptResponseTransfer.structuredMessage` will match the type of `PromptRequestTransfer.structuredMessage` provided in the request.
+     * - Otherwise, executes a regular chat request and maps response to `PromptResponseTransfer.message`.
+     * - Sets `PromptResponseTransfer.isSuccessful` to true if request succeeded, false if all retries failed.
+     * - Populates `PromptResponseTransfer.errors` with error details if request failed.
+     * - Returns the AI provider's response with success status and potential errors.
      *
      * @api
      *

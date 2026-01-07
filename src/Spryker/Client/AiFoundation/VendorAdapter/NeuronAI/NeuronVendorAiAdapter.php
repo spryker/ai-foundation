@@ -7,13 +7,17 @@
 
 namespace Spryker\Client\AiFoundation\VendorAdapter\NeuronAI;
 
+use Generated\Shared\Transfer\ErrorTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
+use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Providers\AIProviderInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\VendorAdapterInterface;
+use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
+use Throwable;
 
 class NeuronVendorAiAdapter implements VendorAdapterInterface
 {
@@ -65,10 +69,108 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         }
 
         $message = $this->messageMapper->mapPromptMessageToProviderMessage($promptRequest->getPromptMessageOrFail());
+        $maxRetries = $promptRequest->getMaxRetries() ?? 1;
 
-        $response = $provider->chat([$message]);
+        $structuredSchema = $promptRequest->getStructuredMessage();
 
-        return $this->messageMapper->mapProviderResponseToPromptResponse($response);
+        if ($structuredSchema instanceof AbstractTransfer) {
+            return $this->executeStructuredPrompt($provider, $message, $structuredSchema, $maxRetries);
+        }
+
+        return $this->executeRegularPrompt($provider, $message, $maxRetries);
+    }
+
+    protected function executeRegularPrompt(AIProviderInterface $provider, Message $message, int $maxRetries): PromptResponseTransfer
+    {
+        $promptResponseTransfer = new PromptResponseTransfer();
+        $exceptions = [];
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = $provider->chat([$message]);
+
+                $promptResponseTransfer = $this->messageMapper->mapProviderResponseToPromptResponse($response);
+                $promptResponseTransfer->setIsSuccessful(true);
+
+                break;
+            } catch (Throwable $exception) {
+                $exceptions[] = $exception;
+            }
+        }
+
+        if ($promptResponseTransfer->getIsSuccessful() === null) {
+            $promptResponseTransfer->setIsSuccessful(false);
+        }
+
+        foreach ($exceptions as $index => $exception) {
+            $errorTransfer = (new ErrorTransfer())
+                ->setMessage(sprintf(
+                    'Attempt %d failed: %s',
+                    $index + 1,
+                    $exception->getMessage(),
+                ));
+
+            $promptResponseTransfer->addError($errorTransfer);
+        }
+
+        return $promptResponseTransfer;
+    }
+
+    protected function executeStructuredPrompt(
+        AIProviderInterface $provider,
+        Message $message,
+        AbstractTransfer $structuredSchema,
+        int $maxRetries,
+    ): PromptResponseTransfer {
+        $structuredResponseFormat = $this->messageMapper->mapTransferToStructuredResponseFormat($structuredSchema);
+
+        $promptResponseTransfer = new PromptResponseTransfer();
+        $exceptions = [];
+        $responseContents = [];
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            $response = null;
+
+            try {
+                $response = $provider->structured([$message], get_class($structuredSchema), $structuredResponseFormat);
+
+                $responseContents[] = $response->getContent() ?? 'No content';
+
+                $structuredTransfer = $this->messageMapper->mapProviderStructuredResponseToTransfer($response, $structuredSchema);
+
+                $promptResponseTransfer->setStructuredMessage($structuredTransfer);
+                $promptResponseTransfer->setIsSuccessful(true);
+
+                break;
+            } catch (Throwable $exception) {
+                $exceptions[] = $exception;
+
+                if ($response !== null) {
+                    $responseContents[] = $response->getContent() ?? 'No content';
+                } else {
+                    $responseContents[] = null;
+                }
+            }
+        }
+
+        if ($promptResponseTransfer->getIsSuccessful() === null) {
+            $promptResponseTransfer->setIsSuccessful(false);
+        }
+
+        foreach ($exceptions as $index => $exception) {
+            $errorTransfer = (new ErrorTransfer())
+                ->setMessage(sprintf(
+                    'Attempt %d failed: %s. Response content: %s',
+                    $index + 1,
+                    $exception->getMessage(),
+                    $responseContents[$index] ?? 'No content available',
+                ))
+                ->setEntityIdentifier(get_class($structuredSchema));
+
+            $promptResponseTransfer->addError($errorTransfer);
+        }
+
+        return $promptResponseTransfer;
     }
 
     /**

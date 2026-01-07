@@ -7,6 +7,8 @@
 
 namespace Spryker\Client\AiFoundation;
 
+use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapper;
+use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolver;
@@ -48,8 +50,15 @@ class AiFoundationFactory extends AbstractFactory
 
     public function createNeuronAiMessageMapper(): NeuronAiMessageMapper
     {
-        return new NeuronAiMessageMapper();
+        return new NeuronAiMessageMapper(
+            transferJsonSchemaMapper: $this->createTransferToJsonSchemaMapper(),
+        );
     }
 
-    // NeuronAi related methods start
+    public function createTransferToJsonSchemaMapper(): TransferJsonSchemaMapperInterface
+    {
+        return new TransferJsonSchemaMapper();
+    }
+
+    // NeuronAi related methods finish
 }
