@@ -11,9 +11,13 @@ use Generated\Shared\Transfer\ErrorTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
 use NeuronAI\Chat\Messages\Message;
+use NeuronAI\Chat\Messages\ToolCallMessage;
+use NeuronAI\Chat\Messages\ToolCallResultMessage;
 use NeuronAI\Providers\AIProviderInterface;
+use Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\VendorAdapterInterface;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
@@ -51,14 +55,22 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
 
     /**
      * @param array<string, array<string, mixed>> $aiConfigurations
+     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface> $aiToolSetPlugins
      */
     public function __construct(
         protected ProviderResolverInterface $providerResolver,
         protected NeuronAiMessageMapper $messageMapper,
+        protected NeuronAiToolMapperInterface $toolMapper,
         protected array $aiConfigurations,
+        protected array $aiToolSetPlugins = [],
     ) {
     }
 
+    /**
+     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
+     *
+     * @return \Generated\Shared\Transfer\PromptResponseTransfer
+     */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer
     {
         $resolvedAiConfiguration = $this->resolveAiConfiguration($promptRequest);
@@ -67,6 +79,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         if (isset($resolvedAiConfiguration[static::AI_CONFIG_SYSTEM_PROMPT])) {
             $provider->systemPrompt($resolvedAiConfiguration[static::AI_CONFIG_SYSTEM_PROMPT]);
         }
+
+        $provider = $this->setToolsToProvider($provider, $promptRequest);
 
         $message = $this->messageMapper->mapPromptMessageToProviderMessage($promptRequest->getPromptMessageOrFail());
         $maxRetries = $promptRequest->getMaxRetries() ?? 1;
@@ -80,14 +94,36 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         return $this->executeRegularPrompt($provider, $message, $maxRetries);
     }
 
+    /**
+     * @param \NeuronAI\Providers\AIProviderInterface $provider
+     * @param \NeuronAI\Chat\Messages\Message $message
+     * @param int $maxRetries
+     *
+     * @return \Generated\Shared\Transfer\PromptResponseTransfer
+     */
     protected function executeRegularPrompt(AIProviderInterface $provider, Message $message, int $maxRetries): PromptResponseTransfer
     {
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
+        $toolInvocationTransfers = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            $conversationHistory = [$message];
             try {
                 $response = $provider->chat([$message]);
+
+                while ($response instanceof ToolCallMessage) {
+                    $executedTools = $this->executeToolCalls($response);
+
+                    $toolResultMessage = new ToolCallResultMessage($executedTools);
+                    $conversationHistory[] = $response;
+                    $conversationHistory[] = $toolResultMessage;
+
+                    $mappedToolInvocations = $this->messageMapper->mapExecutedToolsToToolInvocations($executedTools);
+                    $toolInvocationTransfers = array_merge($toolInvocationTransfers, $mappedToolInvocations);
+
+                    $response = $provider->chat($conversationHistory);
+                }
 
                 $promptResponseTransfer = $this->messageMapper->mapProviderResponseToPromptResponse($response);
                 $promptResponseTransfer->setIsSuccessful(true);
@@ -96,6 +132,10 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             } catch (Throwable $exception) {
                 $exceptions[] = $exception;
             }
+        }
+
+        foreach ($toolInvocationTransfers as $toolInvocationTransfer) {
+            $promptResponseTransfer->addToolInvocation($toolInvocationTransfer);
         }
 
         if ($promptResponseTransfer->getIsSuccessful() === null) {
@@ -116,6 +156,14 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         return $promptResponseTransfer;
     }
 
+    /**
+     * @param \NeuronAI\Providers\AIProviderInterface $provider
+     * @param \NeuronAI\Chat\Messages\Message $message
+     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredSchema
+     * @param int $maxRetries
+     *
+     * @return \Generated\Shared\Transfer\PromptResponseTransfer
+     */
     protected function executeStructuredPrompt(
         AIProviderInterface $provider,
         Message $message,
@@ -123,16 +171,32 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         int $maxRetries,
     ): PromptResponseTransfer {
         $structuredResponseFormat = $this->messageMapper->mapTransferToStructuredResponseFormat($structuredSchema);
+        $structuredSchemaClass = get_class($structuredSchema);
 
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
         $responseContents = [];
+        $toolInvocationTransfers = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $response = null;
 
+            $conversationHistory = [$message];
             try {
-                $response = $provider->structured([$message], get_class($structuredSchema), $structuredResponseFormat);
+                $response = $provider->structured($conversationHistory, $structuredSchemaClass, $structuredResponseFormat);
+
+                while ($response instanceof ToolCallMessage) {
+                    $executedTools = $this->executeToolCalls($response);
+
+                    $toolResultMessage = new ToolCallResultMessage($executedTools);
+                    $conversationHistory[] = $response;
+                    $conversationHistory[] = $toolResultMessage;
+
+                    $mappedToolInvocations = $this->messageMapper->mapExecutedToolsToToolInvocations($executedTools);
+                    $toolInvocationTransfers = array_merge($toolInvocationTransfers, $mappedToolInvocations);
+
+                    $response = $provider->structured($conversationHistory, $structuredSchemaClass, $structuredResponseFormat);
+                }
 
                 $responseContents[] = $response->getContent() ?? 'No content';
 
@@ -151,6 +215,10 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                     $responseContents[] = null;
                 }
             }
+        }
+
+        foreach ($toolInvocationTransfers as $toolInvocationTransfer) {
+            $promptResponseTransfer->addToolInvocation($toolInvocationTransfer);
         }
 
         if ($promptResponseTransfer->getIsSuccessful() === null) {
@@ -229,5 +297,66 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                 );
             }
         }
+    }
+
+    /**
+     * @param \NeuronAI\Providers\AIProviderInterface $provider
+     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
+     *
+     * @return \NeuronAI\Providers\AIProviderInterface
+     */
+    protected function setToolsToProvider(
+        AIProviderInterface $provider,
+        PromptRequestTransfer $promptRequest,
+    ): AIProviderInterface {
+        $toolSetNames = $promptRequest->getToolSetNames();
+
+        $matchingToolSets = array_filter(
+            $this->aiToolSetPlugins,
+            static fn (ToolSetPluginInterface $toolSet) => in_array($toolSet->getName(), $toolSetNames, true),
+        );
+
+        if (count($matchingToolSets) === 0) {
+            return $provider;
+        }
+
+        $tools = $this->extractToolsFromToolSets($matchingToolSets);
+
+        $neuronTools = $this->toolMapper->mapToolsToNeuronTools($tools);
+        $provider->setTools($neuronTools);
+
+        return $provider;
+    }
+
+    /**
+     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface> $toolSets
+     *
+     * @return array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface>
+     */
+    protected function extractToolsFromToolSets(array $toolSets): array
+    {
+        $tools = [];
+
+        foreach ($toolSets as $toolSet) {
+            $tools = array_merge($tools, $toolSet->getTools());
+        }
+
+        return $tools;
+    }
+
+    /**
+     * @param \NeuronAI\Chat\Messages\ToolCallMessage $toolCallMessage
+     *
+     * @return array<\NeuronAI\Tools\ToolInterface>
+     */
+    protected function executeToolCalls(ToolCallMessage $toolCallMessage): array
+    {
+        $tools = $toolCallMessage->getTools();
+
+        foreach ($tools as $tool) {
+            $tool->execute();
+        }
+
+        return $tools;
     }
 }

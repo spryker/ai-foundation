@@ -5,6 +5,7 @@
         <property name="structuredMessage" type="object" description="Transfer object that defines the schema for structured response from the LLM."/>
         <property name="aiConfigurationName" type="string" description="The configuration name of ai configuration"/>
         <property name="maxRetries" type="int" description="Maximum number of retry attempts for the request in case of failures. Defaults to 1."/>
+        <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names."/>
     </transfer>
 
     <transfer name="PromptResponse">
@@ -12,6 +13,7 @@
         <property name="structuredMessage" type="object" description="Transfer object containing the structured response data returned by the LLM."/>
         <property name="isSuccessful" type="bool" description="Indicates whether the prompt request was successful."/>
         <property name="errors" type="Error[]" singular="error" description="List of errors encountered during the prompt request, if any."/>
+        <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="List of tool invocations executed by the LLM during prompt processing."/>
     </transfer>
 
     <transfer name="PromptMessage">
@@ -25,6 +27,12 @@
         <property name="content" type="string"/>
         <property name="contentType" type="string"/>
         <property name="mediaType" type="string"/>
+    </transfer>
+
+    <transfer name="ToolInvocation" strict="true">
+        <property name="name" type="string" description="The unique identifier of the tool that was called."/>
+        <property name="arguments" type="array" singular="argument" description="The parameters passed to the tool during execution."/>
+        <property name="result" type="string" description="The result returned after executing the tool."/>
     </transfer>
 
     <transfer name="Error">

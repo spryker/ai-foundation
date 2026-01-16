@@ -11,12 +11,14 @@ use ArrayObject;
 use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
+use Generated\Shared\Transfer\ToolInvocationTransfer;
 use InvalidArgumentException;
 use NeuronAI\Chat\Attachments\Attachment;
 use NeuronAI\Chat\Enums\AttachmentContentType;
 use NeuronAI\Chat\Enums\AttachmentType;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\UserMessage;
+use NeuronAI\Tools\ToolInterface;
 use ReflectionClass;
 use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
@@ -155,6 +157,35 @@ class NeuronAiMessageMapper
             AttachmentContentType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
             default => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
         };
+    }
+
+    /**
+     * @param array<\NeuronAI\Tools\ToolInterface> $executedTools
+     *
+     * @return array<\Generated\Shared\Transfer\ToolInvocationTransfer>
+     */
+    public function mapExecutedToolsToToolInvocations(array $executedTools): array
+    {
+        $toolInvocations = [];
+
+        foreach ($executedTools as $tool) {
+            $toolInvocations[] = $this->mapExecutedToolToToolInvocation($tool);
+        }
+
+        return $toolInvocations;
+    }
+
+    /**
+     * @param \NeuronAI\Tools\ToolInterface $tool
+     *
+     * @return \Generated\Shared\Transfer\ToolInvocationTransfer
+     */
+    protected function mapExecutedToolToToolInvocation(ToolInterface $tool): ToolInvocationTransfer
+    {
+        return (new ToolInvocationTransfer())
+            ->setName($tool->getName())
+            ->setArguments($tool->getInputs())
+            ->setResult($tool->getResult());
     }
 
     /**

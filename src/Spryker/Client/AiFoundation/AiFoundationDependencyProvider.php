@@ -17,7 +17,9 @@ use Spryker\Client\Kernel\Container;
  */
 class AiFoundationDependencyProvider extends AbstractDependencyProvider
 {
-    public const VENDOR_PROVIDEER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
+    public const VENDOR_PROVIDER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
+
+    public const PLUGINS_AI_TOOL_SET = 'PLUGINS_AI_TOOL_SET';
 
     /**
      * @param \Spryker\Client\Kernel\Container $container
@@ -28,13 +30,14 @@ class AiFoundationDependencyProvider extends AbstractDependencyProvider
     {
         $container = parent::provideServiceLayerDependencies($container);
         $container = $this->addVendorAdapterPlugin($container);
+        $container = $this->addAiToolSetPlugins($container);
 
         return $container;
     }
 
     protected function addVendorAdapterPlugin(Container $container): Container
     {
-        $container->set(static::VENDOR_PROVIDEER_PLUGIN, function (): VendorProviderPluginInterface {
+        $container->set(static::VENDOR_PROVIDER_PLUGIN, function (): VendorProviderPluginInterface {
             return $this->getVendorAdapterPlugin();
         });
 
@@ -44,5 +47,27 @@ class AiFoundationDependencyProvider extends AbstractDependencyProvider
     protected function getVendorAdapterPlugin(): VendorProviderPluginInterface
     {
         return new NeuronAiVendorProviderPlugin();
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     *
+     * @return \Spryker\Client\Kernel\Container
+     */
+    protected function addAiToolSetPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_AI_TOOL_SET, function (): array {
+            return $this->getAiToolSetPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface>
+     */
+    protected function getAiToolSetPlugins(): array
+    {
+        return [];
     }
 }

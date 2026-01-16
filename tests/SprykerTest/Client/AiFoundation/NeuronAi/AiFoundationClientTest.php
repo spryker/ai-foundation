@@ -24,6 +24,8 @@ use Spryker\Client\AiFoundation\AiFoundationFactory;
 use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapper;
 use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
+use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
@@ -355,6 +357,7 @@ class AiFoundationClientTest extends Unit
             providerResolver: $mockProviderResolver,
             messageMapper: $this->createNeuronAiMessageMapper(),
             aiConfigurations: $config->getAiConfigurations(),
+            toolMapper: $this->createNeuronAiToolMapper(),
         );
 
         $factoryMock = $this->createMock(AiFoundationFactory::class);
@@ -424,6 +427,7 @@ class AiFoundationClientTest extends Unit
             providerResolver: $mockProviderResolver,
             messageMapper: $this->createNeuronAiMessageMapper(),
             aiConfigurations: $config->getAiConfigurations(),
+            toolMapper: $this->createNeuronAiToolMapper(),
         );
 
         $factoryMock = $this->createMock(AiFoundationFactory::class);
@@ -753,5 +757,10 @@ class AiFoundationClientTest extends Unit
     protected function createTransferJsonSchemaMapper(): TransferJsonSchemaMapperInterface
     {
         return new TransferJsonSchemaMapper();
+    }
+
+    public function createNeuronAiToolMapper(): NeuronAiToolMapperInterface
+    {
+        return new NeuronAiToolMapper();
     }
 }

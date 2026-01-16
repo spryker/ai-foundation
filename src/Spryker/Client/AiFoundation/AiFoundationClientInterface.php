@@ -21,9 +21,15 @@ interface AiFoundationClientInterface
      * - Validates that required configuration keys (`provider_name` and `provider_config`) are present and not empty.
      * - Resolves the AI provider instance based on the configuration.
      * - Applies system prompt from configuration if available.
+     * - Gets requested tool sets from the stack of `\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface` if `PromptRequestTransfer.toolSetNames` is provided.
+     * - Extracts tools from the stacks and provides them to the AI provider.
      * - Maps the prompt message from `PromptRequestTransfer.promptMessage` to provider-specific format.
      * - If `PromptRequestTransfer.structuredMessage` is provided, executes the chat request with structured response format.
      * - Retries up to `PromptRequestTransfer.maxRetries` times if request fails (defaults to 1).
+     * - Executes tool calls made by the AI provider during the conversation.
+     * - Captures tool call information including tool name, arguments, and results.
+     * - Populates `PromptResponseTransfer.toolInvocations` with all tool invocations executed during the conversation.
+     * - Continues the conversation with tool results until the AI provides a final response.
      * - Maps the provider's structured response to `PromptResponseTransfer.structuredMessage` when schema is provided.
      * - The type of `PromptResponseTransfer.structuredMessage` will match the type of `PromptRequestTransfer.structuredMessage` provided in the request.
      * - Otherwise, executes a regular chat request and maps response to `PromptResponseTransfer.message`.
