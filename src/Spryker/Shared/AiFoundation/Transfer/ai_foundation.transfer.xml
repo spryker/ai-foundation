@@ -8,7 +8,7 @@
         <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names."/>
     </transfer>
 
-    <transfer name="PromptResponse">
+    <transfer name="PromptResponse" strict="true">
         <property name="message" type="PromptMessage"/>
         <property name="structuredMessage" type="object" description="Transfer object containing the structured response data returned by the LLM."/>
         <property name="isSuccessful" type="bool" description="Indicates whether the prompt request was successful."/>
@@ -16,13 +16,13 @@
         <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="List of tool invocations executed by the LLM during prompt processing."/>
     </transfer>
 
-    <transfer name="PromptMessage">
+    <transfer name="PromptMessage" strict="true">
         <property name="content" type="string"/>
         <property name="contentData" type="array" singular="contentData"/>
         <property name="attachments" type="Attachment[]" singular="attachment"/>
     </transfer>
 
-    <transfer name="Attachment">
+    <transfer name="Attachment" strict="true">
         <property name="type" type="string"/>
         <property name="content" type="string"/>
         <property name="contentType" type="string"/>
@@ -35,7 +35,28 @@
         <property name="result" type="string" description="The result returned after executing the tool."/>
     </transfer>
 
-    <transfer name="Error">
+    <transfer name="Error" strict="true">
         <property name="message" type="string"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItem" strict="true">
+        <property name="idAiWorkflowItem" type="int"/>
+        <property name="fkStateMachineItemState" type="int"/>
+        <property name="name" type="string"/>
+        <property name="contextData" type="array" singular="contextDataItem"/>
+        <property name="state" type="StateMachineItemState"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCriteria" strict="true">
+        <property name="aiWorkflowItemIds" type="int[]" singular="aiWorkflowItemId"/>
+        <property name="stateIds" type="int[]" singular="stateId"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollection" strict="true">
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+    </transfer>
+
+    <transfer name="StateMachineItem">
+        <property name="identifier" type="int"/>
     </transfer>
 </transfers>

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="zed" xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd"
+          namespace="Orm\Zed\AiFoundation\Persistence"
+          package="src.Orm.Zed.AiFoundation.Persistence">
+
+    <table name="spy_ai_workflow_item" phpName="SpyAiWorkflowItem">
+        <column name="id_ai_workflow_item" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+        <column name="fk_state_machine_item_state" type="INTEGER" required="false"/>
+        <column name="name" type="VARCHAR" size="255" required="false"/>
+        <column name="context_data" type="CLOB" required="false"/>
+
+        <behavior name="timestampable"/>
+
+        <foreign-key name="spy_ai_workflow_item-fk_state_machine_item_state"
+                     foreignTable="spy_state_machine_item_state"
+                     phpName="State"
+                     refPhpName="AiWorkflowItem">
+            <reference local="fk_state_machine_item_state" foreign="id_state_machine_item_state"/>
+        </foreign-key>
+
+        <index name="spy_ai_workflow_item-fk_state_machine_item_state">
+            <index-column name="fk_state_machine_item_state"/>
+        </index>
+    </table>
+
+</database>
