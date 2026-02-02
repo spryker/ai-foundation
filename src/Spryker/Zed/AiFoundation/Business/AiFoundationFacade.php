@@ -7,9 +7,11 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Generated\Shared\Transfer\AiWorkflowItemCollectionDeleteCriteriaTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
-use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
 
 /**
@@ -22,15 +24,16 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
      *
      * @api
      *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
      *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
      */
-    public function createAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
-    {
+    public function createAiWorkflowItemCollection(
+        AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
         return $this->getFactory()
-            ->createAiWorkflowItemWriter()
-            ->createAiWorkflowItem($aiWorkflowItemTransfer);
+            ->createAiWorkflowItemCreator()
+            ->createAiWorkflowItemCollection($aiWorkflowItemCollectionRequestTransfer);
     }
 
     /**
@@ -38,15 +41,16 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
      *
      * @api
      *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
      *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
      */
-    public function updateAiWorkflowItemState(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
-    {
+    public function updateAiWorkflowItemStateCollection(
+        AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
         return $this->getFactory()
-            ->createAiWorkflowItemWriter()
-            ->updateAiWorkflowItemState($aiWorkflowItemTransfer);
+            ->createAiWorkflowItemStateUpdater()
+            ->updateAiWorkflowItemStateCollection($aiWorkflowItemCollectionRequestTransfer);
     }
 
     /**
@@ -54,15 +58,33 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
      *
      * @api
      *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
      *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
      */
-    public function updateAiWorkflowItemContext(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
-    {
+    public function updateAiWorkflowItemContextCollection(
+        AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
         return $this->getFactory()
-            ->createAiWorkflowItemWriter()
-            ->updateAiWorkflowItemContext($aiWorkflowItemTransfer);
+            ->createAiWorkflowItemContextUpdater()
+            ->updateAiWorkflowItemContextCollection($aiWorkflowItemCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionDeleteCriteriaTransfer $aiWorkflowItemCollectionDeleteCriteriaTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
+     */
+    public function deleteAiWorkflowItemCollection(
+        AiWorkflowItemCollectionDeleteCriteriaTransfer $aiWorkflowItemCollectionDeleteCriteriaTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createAiWorkflowItemDeleter()
+            ->deleteAiWorkflowItemCollection($aiWorkflowItemCollectionDeleteCriteriaTransfer);
     }
 
     /**

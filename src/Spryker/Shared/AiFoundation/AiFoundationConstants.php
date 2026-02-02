@@ -201,14 +201,4 @@ interface AiFoundationConstants
      * @var string
      */
     public const AI_CONFIG_SYSTEM_PROMPT = 'system_prompt';
-
-    /**
-     * Specification:
-     * - Defines the AiWorkflow state machine name.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const AI_WORKFLOW_STATE_MACHINE_NAME = 'AiWorkflow';
 }

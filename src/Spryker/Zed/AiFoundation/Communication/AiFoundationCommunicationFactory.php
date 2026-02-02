@@ -7,7 +7,6 @@
 
 namespace Spryker\Zed\AiFoundation\Communication;
 
-use Spryker\Client\AiFoundation\AiFoundationClientInterface;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 
@@ -33,13 +32,5 @@ class AiFoundationCommunicationFactory extends AbstractCommunicationFactory
     public function getAiWorkflowConditionPlugins(): array
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_WORKFLOW_CONDITION);
-    }
-
-    /**
-     * @return \Spryker\Client\AiFoundation\AiFoundationClientInterface
-     */
-    public function getClientAiFoundation(): AiFoundationClientInterface
-    {
-        return $this->getProvidedDependency(AiFoundationDependencyProvider::CLIENT_AI_FOUNDATION);
     }
 }

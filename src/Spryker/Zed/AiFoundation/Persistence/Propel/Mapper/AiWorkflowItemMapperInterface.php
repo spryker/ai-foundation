@@ -9,7 +9,6 @@ namespace Spryker\Zed\AiFoundation\Persistence\Propel\Mapper;
 
 use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem;
-use Propel\Runtime\Collection\ObjectCollection;
 
 interface AiWorkflowItemMapperInterface
 {
@@ -36,9 +35,9 @@ interface AiWorkflowItemMapperInterface
     ): SpyAiWorkflowItem;
 
     /**
-     * @param \Propel\Runtime\Collection\ObjectCollection<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities
+     * @param array<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities
      *
      * @return array<\Generated\Shared\Transfer\AiWorkflowItemTransfer>
      */
-    public function mapAiWorkflowItemEntitiesToTransfers(ObjectCollection $aiWorkflowItemEntities): array;
+    public function mapAiWorkflowItemEntitiesToTransfers(array $aiWorkflowItemEntities): array;
 }

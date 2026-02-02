@@ -43,7 +43,7 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
 
         $aiWorkflowItemTransfers = $this->getFactory()
             ->createAiWorkflowItemMapper()
-            ->mapAiWorkflowItemEntitiesToTransfers($aiWorkflowItemEntities);
+            ->mapAiWorkflowItemEntitiesToTransfers($aiWorkflowItemEntities->getArrayCopy());
 
         return $aiWorkflowItemCollection->setAiWorkflowItems(new ArrayObject($aiWorkflowItemTransfers));
     }
@@ -58,15 +58,21 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
         SpyAiWorkflowItemQuery $aiWorkflowItemQuery,
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
     ): SpyAiWorkflowItemQuery {
-        if ($aiWorkflowItemCriteriaTransfer->getAiWorkflowItemIds()) {
+        $aiWorkflowItemConditions = $aiWorkflowItemCriteriaTransfer->getAiWorkflowItemConditions();
+
+        if ($aiWorkflowItemConditions === null) {
+            return $aiWorkflowItemQuery;
+        }
+
+        if ($aiWorkflowItemConditions->getAiWorkflowItemIds()) {
             $aiWorkflowItemQuery->filterByIdAiWorkflowItem_In(
-                $aiWorkflowItemCriteriaTransfer->getAiWorkflowItemIds(),
+                $aiWorkflowItemConditions->getAiWorkflowItemIds(),
             );
         }
 
-        if ($aiWorkflowItemCriteriaTransfer->getStateIds()) {
+        if ($aiWorkflowItemConditions->getStateIds()) {
             $aiWorkflowItemQuery->filterByFkStateMachineItemState_In(
-                $aiWorkflowItemCriteriaTransfer->getStateIds(),
+                $aiWorkflowItemConditions->getStateIds(),
             );
         }
 

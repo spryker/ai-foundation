@@ -10,10 +10,11 @@ namespace Spryker\Zed\AiFoundation\Persistence\Propel\Mapper;
 use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use JsonException;
 use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem;
-use Propel\Runtime\Collection\ObjectCollection;
 
-class AiWorkflowItemMapper implements AiWorkflowItemMapperInterface
+class AiWorkflowItemMapper
 {
+    protected const DEFAULT_CONTEXT_DATA_JSON_DECODE_DEPTH = 512;
+
     /**
      * @param \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem $aiWorkflowItemEntity
      * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
@@ -29,7 +30,12 @@ class AiWorkflowItemMapper implements AiWorkflowItemMapperInterface
         $contextDataJson = $aiWorkflowItemEntity->getContextData();
         if ($contextDataJson) {
             try {
-                $contextData = json_decode($contextDataJson, true, 512, JSON_THROW_ON_ERROR);
+                $contextData = json_decode(
+                    $contextDataJson,
+                    true,
+                    static::DEFAULT_CONTEXT_DATA_JSON_DECODE_DEPTH,
+                    JSON_THROW_ON_ERROR,
+                );
                 $aiWorkflowItemTransfer->setContextData($contextData);
             } catch (JsonException $jsonException) {
                 $aiWorkflowItemTransfer->setContextData([]);
@@ -62,11 +68,11 @@ class AiWorkflowItemMapper implements AiWorkflowItemMapperInterface
     }
 
     /**
-     * @param \Propel\Runtime\Collection\ObjectCollection<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities
+     * @param array<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities
      *
      * @return array<\Generated\Shared\Transfer\AiWorkflowItemTransfer>
      */
-    public function mapAiWorkflowItemEntitiesToTransfers(ObjectCollection $aiWorkflowItemEntities): array
+    public function mapAiWorkflowItemEntitiesToTransfers(array $aiWorkflowItemEntities): array
     {
         $aiWorkflowItemTransfers = [];
 

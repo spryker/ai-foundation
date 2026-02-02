@@ -8,19 +8,19 @@
 namespace Spryker\Zed\AiFoundation\Persistence;
 
 use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapper;
-use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapperInterface;
 use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
 
 /**
+ * @method \Spryker\Zed\AiFoundation\AiFoundationConfig getConfig()
  * @method \Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface getEntityManager()
  * @method \Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface getRepository()
  */
 class AiFoundationPersistenceFactory extends AbstractPersistenceFactory
 {
     /**
-     * @return \Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapperInterface
+     * @return \Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapper
      */
-    public function createAiWorkflowItemMapper(): AiWorkflowItemMapperInterface
+    public function createAiWorkflowItemMapper(): AiWorkflowItemMapper
     {
         return new AiWorkflowItemMapper();
     }

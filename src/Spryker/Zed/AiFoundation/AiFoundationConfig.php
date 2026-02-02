@@ -7,20 +7,21 @@
 
 namespace Spryker\Zed\AiFoundation;
 
-use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Zed\Kernel\AbstractBundleConfig;
 
 class AiFoundationConfig extends AbstractBundleConfig
 {
-    protected const string AI_WORKFLOW_STATE_MACHINE_NAME = AiFoundationConstants::AI_WORKFLOW_STATE_MACHINE_NAME;
-
-    protected const string DEFAULT_PROCESS_NAME_INTELLIGENT_TASK = 'IntelligentTask01';
+    /**
+     * Specification:
+     * - Defines the AiWorkflow state machine name.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const AI_WORKFLOW_STATE_MACHINE_NAME = 'AiWorkflow';
 
     protected const string DEFAULT_INITIAL_STATE = 'new';
-
-    protected const array PROCESS_NAME_TO_INITIAL_STATE_MAP = [
-        self::DEFAULT_PROCESS_NAME_INTELLIGENT_TASK => self::DEFAULT_INITIAL_STATE,
-    ];
 
     /**
      * @api
@@ -33,34 +34,6 @@ class AiFoundationConfig extends AbstractBundleConfig
     }
 
     /**
-     * @api
-     *
-     * @return array<string>
-     */
-    public function getActiveProcesses(): array
-    {
-        return array_merge([
-            static::DEFAULT_PROCESS_NAME_INTELLIGENT_TASK,
-        ], $this->getProjectActiveProcesses());
-    }
-
-    /**
-     * @api
-     *
-     * @return string
-     */
-    public function getInitialStateForProcess(string $process): string
-    {
-        $projectInitialStateMap = $this->getProjectInitialStateMapForProcess();
-
-        if (isset($projectInitialStateMap[$process])) {
-            return $projectInitialStateMap[$process];
-        }
-
-        return static::PROCESS_NAME_TO_INITIAL_STATE_MAP[$process];
-    }
-
-    /**
      * Specification:
      * - Returns a list of active AI workflow processes for the project.
      * - Expected format: ['IntelligentTask01', 'IntelligentTask02'].
@@ -69,9 +42,19 @@ class AiFoundationConfig extends AbstractBundleConfig
      *
      * @return array<string>
      */
-    public function getProjectActiveProcesses(): array
+    public function getAiWorkflowActiveProcesses(): array
     {
         return [];
+    }
+
+    /**
+     * @api
+     *
+     * @return string
+     */
+    public function getAiWorkflowInitialStateForProcess(string $process): string
+    {
+        return $this->getAiWorkflowInitialStateMapForProcess()[$process] ?? static::DEFAULT_INITIAL_STATE;
     }
 
     /**
@@ -79,11 +62,9 @@ class AiFoundationConfig extends AbstractBundleConfig
      * - Returns a map of process names to their initial states for the project.
      * - Expected format: ['IntelligentTask01' => 'new'].
      *
-     * @api
-     *
      * @return array<string, string>
      */
-    public function getProjectInitialStateMapForProcess(): array
+    protected function getAiWorkflowInitialStateMapForProcess(): array
     {
         return [];
     }

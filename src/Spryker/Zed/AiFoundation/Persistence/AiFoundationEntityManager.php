@@ -67,4 +67,16 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
             $aiWorkflowItemTransfer,
         );
     }
+
+    /**
+     * @param int $idAiWorkflowItem
+     *
+     * @return void
+     */
+    public function deleteAiWorkflowItem(int $idAiWorkflowItem): void
+    {
+        SpyAiWorkflowItemQuery::create()
+            ->filterByIdAiWorkflowItem($idAiWorkflowItem)
+            ->delete();
+    }
 }

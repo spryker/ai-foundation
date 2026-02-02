@@ -7,10 +7,16 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
-use Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemReader;
-use Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemReaderInterface;
-use Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemWriter;
-use Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemWriterInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreator;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreatorInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Deleter\AiWorkflowItemDeleter;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Deleter\AiWorkflowItemDeleterInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReader;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReaderInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemContextUpdater;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemContextUpdaterInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemStateUpdater;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemStateUpdaterInterface;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 
 /**
@@ -20,17 +26,48 @@ use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 class AiFoundationBusinessFactory extends AbstractBusinessFactory
 {
     /**
-     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemWriterInterface
+     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreatorInterface
      */
-    public function createAiWorkflowItemWriter(): AiWorkflowItemWriterInterface
+    public function createAiWorkflowItemCreator(): AiWorkflowItemCreatorInterface
     {
-        return new AiWorkflowItemWriter(
+        return new AiWorkflowItemCreator(
             $this->getEntityManager(),
         );
     }
 
     /**
-     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\AiWorkflowItemReaderInterface
+     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemStateUpdaterInterface
+     */
+    public function createAiWorkflowItemStateUpdater(): AiWorkflowItemStateUpdaterInterface
+    {
+        return new AiWorkflowItemStateUpdater(
+            $this->getEntityManager(),
+        );
+    }
+
+    /**
+     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemContextUpdaterInterface
+     */
+    public function createAiWorkflowItemContextUpdater(): AiWorkflowItemContextUpdaterInterface
+    {
+        return new AiWorkflowItemContextUpdater(
+            $this->getEntityManager(),
+        );
+    }
+
+    /**
+     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\Deleter\AiWorkflowItemDeleterInterface
+     */
+    public function createAiWorkflowItemDeleter(): AiWorkflowItemDeleterInterface
+    {
+        return new AiWorkflowItemDeleter(
+            $this->getRepository(),
+            $this->getEntityManager(),
+        );
+    }
+
+    /**
+     * @return \Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReaderInterface
      */
     public function createAiWorkflowItemReader(): AiWorkflowItemReaderInterface
     {

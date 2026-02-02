@@ -6,7 +6,6 @@
     <table name="spy_ai_workflow_item" phpName="SpyAiWorkflowItem">
         <column name="id_ai_workflow_item" type="INTEGER" primaryKey="true" autoIncrement="true"/>
         <column name="fk_state_machine_item_state" type="INTEGER" required="false"/>
-        <column name="name" type="VARCHAR" size="255" required="false"/>
         <column name="context_data" type="CLOB" required="false"/>
 
         <behavior name="timestampable"/>

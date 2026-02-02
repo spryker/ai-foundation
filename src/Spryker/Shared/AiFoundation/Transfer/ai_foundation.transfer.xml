@@ -37,23 +37,42 @@
 
     <transfer name="Error">
         <property name="message" type="string"/>
+        <property name="entityIdentifier" type="string"/>
     </transfer>
 
     <transfer name="AiWorkflowItem" strict="true">
         <property name="idAiWorkflowItem" type="int"/>
         <property name="fkStateMachineItemState" type="int"/>
-        <property name="name" type="string"/>
         <property name="contextData" type="array" singular="contextDataItem"/>
         <property name="state" type="StateMachineItemState"/>
     </transfer>
 
     <transfer name="AiWorkflowItemCriteria" strict="true">
+        <property name="aiWorkflowItemConditions" type="AiWorkflowItemConditions"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemConditions" strict="true">
         <property name="aiWorkflowItemIds" type="int[]" singular="aiWorkflowItemId"/>
         <property name="stateIds" type="int[]" singular="stateId"/>
     </transfer>
 
     <transfer name="AiWorkflowItemCollection" strict="true">
         <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollectionRequest" strict="true">
+        <property name="isTransactional" type="bool"/>
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollectionResponse" strict="true">
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+        <property name="isSuccessful" type="bool" description="Indicates whether the operation was successful."/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollectionDeleteCriteria" strict="true">
+        <property name="isTransactional" type="bool"/>
+        <property name="aiWorkflowItemIds" type="int[]" singular="idAiWorkflowItem"/>
     </transfer>
 
     <transfer name="StateMachineItem">

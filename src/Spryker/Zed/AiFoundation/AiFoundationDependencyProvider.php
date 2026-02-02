@@ -7,8 +7,6 @@
 
 namespace Spryker\Zed\AiFoundation;
 
-use Spryker\Zed\AiFoundation\Communication\Plugin\StateMachine\Command\OryxAgentAnalyzeCommandPlugin;
-use Spryker\Zed\AiFoundation\Communication\Plugin\StateMachine\Condition\OryxAgentSuccessConditionPlugin;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 
@@ -17,8 +15,6 @@ use Spryker\Zed\Kernel\Container;
  */
 class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 {
-    public const string CLIENT_AI_FOUNDATION = 'CLIENT_AI_FOUNDATION';
-
     public const string PLUGINS_AI_WORKFLOW_COMMAND = 'PLUGINS_AI_WORKFLOW_COMMAND';
 
     public const string PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
@@ -33,7 +29,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = parent::provideCommunicationLayerDependencies($container);
         $container = $this->addAiWorkflowCommandPlugins($container);
         $container = $this->addAiWorkflowConditionPlugins($container);
-        $container = $this->addClientAiFoundation($container);
 
         return $container;
     }
@@ -61,9 +56,7 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function getAiWorkflowCommandPlugins(): array
     {
-        return [
-            'OryxAgent/Analyze' => new OryxAgentAnalyzeCommandPlugin(),
-        ];
+        return [];
     }
 
     /**
@@ -89,22 +82,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function getAiWorkflowConditionPlugins(): array
     {
-        return [
-            'OryxAgent/IsSuccessful' => new OryxAgentSuccessConditionPlugin(),
-        ];
-    }
-
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
-    protected function addClientAiFoundation(Container $container): Container
-    {
-        $container->set(static::CLIENT_AI_FOUNDATION, function (Container $container) {
-            return $container->getLocator()->aiFoundation()->client();
-        });
-
-        return $container;
+        return [];
     }
 }

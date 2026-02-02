@@ -24,4 +24,11 @@ interface AiFoundationEntityManagerInterface
      * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
      */
     public function updateAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer;
+
+    /**
+     * @param int $idAiWorkflowItem
+     *
+     * @return void
+     */
+    public function deleteAiWorkflowItem(int $idAiWorkflowItem): void;
 }

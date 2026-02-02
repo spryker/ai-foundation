@@ -7,6 +7,8 @@
 
 namespace Spryker\Zed\AiFoundation\Communication\Plugin\StateMachine;
 
+use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemConditionsTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
@@ -64,7 +66,7 @@ class AiWorkflowStateMachineHandlerPlugin extends AbstractPlugin implements Stat
      */
     public function getActiveProcesses(): array
     {
-        return $this->getConfig()->getActiveProcesses();
+        return $this->getConfig()->getAiWorkflowActiveProcesses();
     }
 
     /**
@@ -78,7 +80,7 @@ class AiWorkflowStateMachineHandlerPlugin extends AbstractPlugin implements Stat
      */
     public function getInitialStateForProcess($processName): string
     {
-        return $this->getConfig()->getInitialStateForProcess($processName);
+        return $this->getConfig()->getAiWorkflowInitialStateForProcess($processName);
     }
 
     /**
@@ -94,8 +96,11 @@ class AiWorkflowStateMachineHandlerPlugin extends AbstractPlugin implements Stat
     {
         $idAiWorkflowItem = $stateMachineItemTransfer->getIdentifierOrFail();
 
-        $aiWorkflowItemCriteriaTransfer = (new AiWorkflowItemCriteriaTransfer())
+        $aiWorkflowItemConditionsTransfer = (new AiWorkflowItemConditionsTransfer())
             ->addAiWorkflowItemId($idAiWorkflowItem);
+
+        $aiWorkflowItemCriteriaTransfer = (new AiWorkflowItemCriteriaTransfer())
+            ->setAiWorkflowItemConditions($aiWorkflowItemConditionsTransfer);
 
         $aiWorkflowItemCollection = $this->getFacade()->getAiWorkflowItemCollection($aiWorkflowItemCriteriaTransfer);
 
@@ -106,9 +111,13 @@ class AiWorkflowStateMachineHandlerPlugin extends AbstractPlugin implements Stat
         $aiWorkflowItemTransfer = $aiWorkflowItemCollection->getAiWorkflowItems()->offsetGet(0);
         $aiWorkflowItemTransfer->setFkStateMachineItemState($stateMachineItemTransfer->getIdItemState());
 
-        $this->getFacade()->updateAiWorkflowItemState($aiWorkflowItemTransfer);
+        $request = (new AiWorkflowItemCollectionRequestTransfer())
+            ->setIsTransactional(true)
+            ->addAiWorkflowItem($aiWorkflowItemTransfer);
 
-        return true;
+        $response = $this->getFacade()->updateAiWorkflowItemStateCollection($request);
+
+        return $response->getIsSuccessful() ?? false;
     }
 
     /**
@@ -126,11 +135,14 @@ class AiWorkflowStateMachineHandlerPlugin extends AbstractPlugin implements Stat
             return $stateIds;
         }
 
-        $aiWorkflowItemCriteriaTransfer = new AiWorkflowItemCriteriaTransfer();
+        $aiWorkflowItemConditionsTransfer = new AiWorkflowItemConditionsTransfer();
 
         foreach ($stateIds as $stateId) {
-            $aiWorkflowItemCriteriaTransfer->addStateId($stateId);
+            $aiWorkflowItemConditionsTransfer->addStateId($stateId);
         }
+
+        $aiWorkflowItemCriteriaTransfer = (new AiWorkflowItemCriteriaTransfer())
+            ->setAiWorkflowItemConditions($aiWorkflowItemConditionsTransfer);
 
         $aiWorkflowItemCollection = $this->getFacade()->getAiWorkflowItemCollection($aiWorkflowItemCriteriaTransfer);
 
