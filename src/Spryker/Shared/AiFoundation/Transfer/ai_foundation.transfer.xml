@@ -78,4 +78,7 @@
     <transfer name="StateMachineItem">
         <property name="identifier" type="int"/>
     </transfer>
+
+    <transfer name="StateMachineItemState">
+    </transfer>
 </transfers>
