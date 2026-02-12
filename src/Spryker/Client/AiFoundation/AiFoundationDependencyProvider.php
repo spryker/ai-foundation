@@ -7,8 +7,6 @@
 
 namespace Spryker\Client\AiFoundation;
 
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronAiVendorProviderPlugin;
-use Spryker\Client\AiFoundation\VendorAdapter\VendorProviderPluginInterface;
 use Spryker\Client\Kernel\AbstractDependencyProvider;
 use Spryker\Client\Kernel\Container;
 
@@ -17,9 +15,7 @@ use Spryker\Client\Kernel\Container;
  */
 class AiFoundationDependencyProvider extends AbstractDependencyProvider
 {
-    public const VENDOR_PROVIDER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
-
-    public const PLUGINS_AI_TOOL_SET = 'PLUGINS_AI_TOOL_SET';
+    public const CLIENT_ZED_REQUEST = 'CLIENT_ZED_REQUEST';
 
     /**
      * @param \Spryker\Client\Kernel\Container $container
@@ -29,24 +25,9 @@ class AiFoundationDependencyProvider extends AbstractDependencyProvider
     public function provideServiceLayerDependencies(Container $container): Container
     {
         $container = parent::provideServiceLayerDependencies($container);
-        $container = $this->addVendorAdapterPlugin($container);
-        $container = $this->addAiToolSetPlugins($container);
+        $container = $this->addZedRequestClient($container);
 
         return $container;
-    }
-
-    protected function addVendorAdapterPlugin(Container $container): Container
-    {
-        $container->set(static::VENDOR_PROVIDER_PLUGIN, function (): VendorProviderPluginInterface {
-            return $this->getVendorAdapterPlugin();
-        });
-
-        return $container;
-    }
-
-    protected function getVendorAdapterPlugin(): VendorProviderPluginInterface
-    {
-        return new NeuronAiVendorProviderPlugin();
     }
 
     /**
@@ -54,20 +35,12 @@ class AiFoundationDependencyProvider extends AbstractDependencyProvider
      *
      * @return \Spryker\Client\Kernel\Container
      */
-    protected function addAiToolSetPlugins(Container $container): Container
+    protected function addZedRequestClient(Container $container): Container
     {
-        $container->set(static::PLUGINS_AI_TOOL_SET, function (): array {
-            return $this->getAiToolSetPlugins();
+        $container->set(static::CLIENT_ZED_REQUEST, function (Container $container) {
+            return $container->getLocator()->zedRequest()->client();
         });
 
         return $container;
-    }
-
-    /**
-     * @return array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface>
-     */
-    protected function getAiToolSetPlugins(): array
-    {
-        return [];
     }
 }

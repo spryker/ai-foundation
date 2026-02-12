@@ -7,75 +7,29 @@
 
 namespace Spryker\Client\AiFoundation;
 
-use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapper;
-use Spryker\Client\AiFoundation\Mapper\TransferJsonSchemaMapperInterface;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolver;
-use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
-use Spryker\Client\AiFoundation\VendorAdapter\VendorAdapterInterface;
-use Spryker\Client\AiFoundation\VendorAdapter\VendorProviderPluginInterface;
+use Spryker\Client\AiFoundation\Zed\AiFoundationStub;
+use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
 use Spryker\Client\Kernel\AbstractFactory;
+use Spryker\Client\ZedRequest\ZedRequestClientInterface;
 
 /**
  * @method \Spryker\Client\AiFoundation\AiFoundationConfig getConfig()
  */
 class AiFoundationFactory extends AbstractFactory
 {
-    public function createVendorAdapter(): VendorAdapterInterface
+    /**
+     * @return \Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface
+     */
+    public function createZedAiFoundationStub(): AiFoundationStubInterface
     {
-        return $this->getVendorAdapterPlugin()->getVendorAdapter();
-    }
-
-    public function getVendorAdapterPlugin(): VendorProviderPluginInterface
-    {
-        return $this->getProvidedDependency(AiFoundationDependencyProvider::VENDOR_PROVIDER_PLUGIN);
-    }
-
-    // NeuronAi related methods start
-
-    public function createNeuronAiVendorAdapter(): VendorAdapterInterface
-    {
-        return new NeuronVendorAiAdapter(
-            providerResolver: $this->createNeuronAiProviderResolver(),
-            messageMapper: $this->createNeuronAiMessageMapper(),
-            toolMapper: $this->createNeuronAiToolMapper(),
-            aiConfigurations: $this->getConfig()->getAiConfigurations(),
-            aiToolSetPlugins: $this->getAiToolSetPlugins(),
-        );
-    }
-
-    public function createNeuronAiProviderResolver(): ProviderResolverInterface
-    {
-        return new ProviderResolver();
-    }
-
-    public function createNeuronAiMessageMapper(): NeuronAiMessageMapper
-    {
-        return new NeuronAiMessageMapper(
-            transferJsonSchemaMapper: $this->createTransferToJsonSchemaMapper(),
-        );
-    }
-
-    public function createNeuronAiToolMapper(): NeuronAiToolMapperInterface
-    {
-        return new NeuronAiToolMapper();
+        return new AiFoundationStub($this->getZedRequestClient());
     }
 
     /**
-     * @return array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface>
+     * @return \Spryker\Client\ZedRequest\ZedRequestClientInterface
      */
-    public function getAiToolSetPlugins(): array
+    public function getZedRequestClient(): ZedRequestClientInterface
     {
-        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_TOOL_SET);
-    }
-
-    // NeuronAi related methods finish
-
-    public function createTransferToJsonSchemaMapper(): TransferJsonSchemaMapperInterface
-    {
-        return new TransferJsonSchemaMapper();
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::CLIENT_ZED_REQUEST);
     }
 }

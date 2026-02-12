@@ -7,6 +7,8 @@
 
 namespace Spryker\Client\AiFoundation;
 
+use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
 
@@ -14,36 +16,38 @@ interface AiFoundationClientInterface
 {
     /**
      * Specification:
-     * - Sends a prompt request to the configured AI provider.
+     * - Makes call to Zed.
+     * - Sends prompt request to configured AI provider.
      * - Resolves AI configuration by name from `PromptRequestTransfer.aiConfigurationName`.
-     * - Uses default `\Spryker\Shared\AiFoundation\AiFoundationConstants::AI_CONFIGURATION_DEFAULT` AI configuration if `PromptRequestTransfer.aiConfigurationName` is not provided.
-     * - Throws exception if the specified AI configuration is not found.
-     * - Validates that required configuration keys (`provider_name` and `provider_config`) are present and not empty.
-     * - Resolves the AI provider instance based on the configuration.
-     * - Applies system prompt from configuration if available.
-     * - Gets requested tool sets from the stack of `\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface` if `PromptRequestTransfer.toolSetNames` is provided.
-     * - Extracts tools from the stacks and provides them to the AI provider.
-     * - Maps the prompt message from `PromptRequestTransfer.promptMessage` to provider-specific format.
-     * - If `PromptRequestTransfer.structuredMessage` is provided, executes the chat request with structured response format.
-     * - Retries up to `PromptRequestTransfer.maxRetries` times if request fails (defaults to 1).
-     * - Executes tool calls made by the AI provider during the conversation.
-     * - Captures tool call information including tool name, arguments, and results.
-     * - Populates `PromptResponseTransfer.toolInvocations` with all tool invocations executed during the conversation.
-     * - Continues the conversation with tool results until the AI provides a final response.
-     * - Maps the provider's structured response to `PromptResponseTransfer.structuredMessage` when schema is provided.
-     * - The type of `PromptResponseTransfer.structuredMessage` will match the type of `PromptRequestTransfer.structuredMessage` provided in the request.
-     * - Otherwise, executes a regular chat request and maps response to `PromptResponseTransfer.message`.
-     * - Sets `PromptResponseTransfer.isSuccessful` to true if request succeeded, false if all retries failed.
-     * - Populates `PromptResponseTransfer.errors` with error details if request failed.
-     * - Returns the AI provider's response with success status and potential errors.
+     * - Executes tool calls if tools are provided.
+     * - Maintains conversation history if `PromptRequestTransfer.conversationReference` is provided.
+     * - Retries request up to `PromptRequestTransfer.maxRetries` times on failure.
+     * - Returns structured response if schema is provided in `PromptRequestTransfer.structuredMessage`.
+     * - Returns response with success status and errors.
      *
      * @api
      *
      * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
      *
-     * @throws \Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException
-     *
      * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer;
+
+    /**
+     * Specification:
+     * - Makes call to Zed.
+     * - Retrieves conversation history collection based on criteria.
+     * - Filters conversations by `ConversationHistoryCriteriaTransfer.conversationHistoryConditions.conversationReferences`.
+     * - Returns conversation histories with all messages.
+     * - Returns empty collection if no conversations match criteria.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
+     *
+     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
+     */
+    public function getConversationHistoryCollection(
+        ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
+    ): ConversationHistoryCollectionTransfer;
 }

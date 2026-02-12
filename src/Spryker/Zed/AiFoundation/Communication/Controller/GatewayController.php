@@ -5,49 +5,37 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
-namespace Spryker\Client\AiFoundation;
+namespace Spryker\Zed\AiFoundation\Communication\Controller;
 
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
-use Spryker\Client\Kernel\AbstractClient;
+use Spryker\Zed\Kernel\Communication\Controller\AbstractGatewayController;
 
 /**
- * @method \Spryker\Client\AiFoundation\AiFoundationFactory getFactory()
+ * @method \Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface getFacade()
  */
-class AiFoundationClient extends AbstractClient implements AiFoundationClientInterface
+class GatewayController extends AbstractGatewayController
 {
     /**
-     * {@inheritDoc}
-     *
-     * @api
-     *
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
+     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequestTransfer
      *
      * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
-    public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer
+    public function promptAction(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer
     {
-        return $this->getFactory()
-            ->createZedAiFoundationStub()
-            ->prompt($promptRequest);
+        return $this->getFacade()->prompt($promptRequestTransfer);
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @api
-     *
      * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
      *
      * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
      */
-    public function getConversationHistoryCollection(
+    public function getConversationHistoryCollectionAction(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {
-        return $this->getFactory()
-            ->createZedAiFoundationStub()
-            ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+        return $this->getFacade()->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
     }
 }

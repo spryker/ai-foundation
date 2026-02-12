@@ -5,32 +5,30 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
-namespace Spryker\Client\AiFoundation;
+namespace Spryker\Zed\AiFoundation\Business;
 
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
-use Spryker\Client\Kernel\AbstractClient;
+use Spryker\Zed\Kernel\Business\AbstractFacade;
 
 /**
- * @method \Spryker\Client\AiFoundation\AiFoundationFactory getFactory()
+ * @method \Spryker\Zed\AiFoundation\Business\AiFoundationBusinessFactory getFactory()
+ * @method \Spryker\Zed\AiFoundation\AiFoundationConfig getConfig()
  */
-class AiFoundationClient extends AbstractClient implements AiFoundationClientInterface
+class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInterface
 {
     /**
      * {@inheritDoc}
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer
     {
         return $this->getFactory()
-            ->createZedAiFoundationStub()
+            ->getVendorAdapterPlugin()
+            ->getVendorAdapter()
             ->prompt($promptRequest);
     }
 
@@ -38,16 +36,13 @@ class AiFoundationClient extends AbstractClient implements AiFoundationClientInt
      * {@inheritDoc}
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
      */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {
         return $this->getFactory()
-            ->createZedAiFoundationStub()
+            ->getVendorAdapterPlugin()
+            ->getVendorAdapter()
             ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
     }
 }

@@ -6,9 +6,10 @@
         <property name="aiConfigurationName" type="string" description="The configuration name of ai configuration"/>
         <property name="maxRetries" type="int" description="Maximum number of retry attempts for the request in case of failures. Defaults to 1."/>
         <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names."/>
+        <property name="conversationReference" type="string" description="Optional conversation identifier for chat history persistence. When provided, enables storage-backed conversation history."/>
     </transfer>
 
-    <transfer name="PromptResponse">
+    <transfer name="PromptResponse" strict="true">
         <property name="message" type="PromptMessage"/>
         <property name="structuredMessage" type="object" description="Transfer object containing the structured response data returned by the LLM."/>
         <property name="isSuccessful" type="bool" description="Indicates whether the prompt request was successful."/>
@@ -16,13 +17,14 @@
         <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="List of tool invocations executed by the LLM during prompt processing."/>
     </transfer>
 
-    <transfer name="PromptMessage">
+    <transfer name="PromptMessage" strict="true">
+        <property name="type" type="string" description="Message type: user, assistant, tool_call, or tool_result"/>
         <property name="content" type="string"/>
         <property name="contentData" type="array" singular="contentData"/>
         <property name="attachments" type="Attachment[]" singular="attachment"/>
     </transfer>
 
-    <transfer name="Attachment">
+    <transfer name="Attachment" strict="true">
         <property name="type" type="string"/>
         <property name="content" type="string"/>
         <property name="contentType" type="string"/>
@@ -37,5 +39,26 @@
 
     <transfer name="Error">
         <property name="message" type="string"/>
+        <property name="entityIdentifier" type="string"/>
+    </transfer>
+
+    <transfer name="ConversationHistory" strict="true">
+        <property name="conversationReference" type="string" description="Unique identifier for a conversation thread."/>
+        <property name="messages" type="PromptMessage[]" singular="message" description="Collection of conversation messages in PromptMessage format."/>
+        <property name="originalMessages" type="string" description="JSON-encoded array of raw provider response."/>
+        <property name="createdAt" type="string" description="Timestamp of when the conversation history was created."/>
+        <property name="updatedAt" type="string" description="Timestamp of when the conversation history was last updated."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryCriteria" strict="true">
+        <property name="conversationHistoryConditions" type="ConversationHistoryConditions" description="Filtering conditions for conversation histories."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryConditions" strict="true">
+        <property name="conversationReferences" type="string[]" singular="conversationReference" description="Conversation references to retrieve history for. Uses IN operation - each reference retrieves one conversation."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryCollection" strict="true">
+        <property name="conversationHistories" type="ConversationHistory[]" singular="conversationHistory" description="Collection of conversation histories."/>
     </transfer>
 </transfers>
