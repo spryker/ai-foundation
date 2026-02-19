@@ -7,6 +7,7 @@
 
 namespace Spryker\Zed\AiFoundation\Persistence;
 
+use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
 
@@ -29,4 +30,18 @@ interface AiFoundationEntityManagerInterface
     public function deleteConversationHistory(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): void;
+
+    /**
+     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     */
+    public function createAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer;
+
+    /**
+     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     */
+    public function updateAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer;
 }

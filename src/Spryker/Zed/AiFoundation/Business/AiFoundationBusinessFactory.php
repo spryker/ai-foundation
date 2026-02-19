@@ -8,6 +8,16 @@
 namespace Spryker\Zed\AiFoundation\Business;
 
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreator;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreatorInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReader;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReaderInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowStateMachineItemReader;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowStateMachineItemReaderInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowStateMachineItemUpdater;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowStateMachineItemUpdaterInterface;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemUpdater;
+use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemUpdaterInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
@@ -89,4 +99,44 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return new TransferJsonSchemaMapper();
     }
+
+    // AI Workflow methods start
+
+    public function createAiWorkflowItemCreator(): AiWorkflowItemCreatorInterface
+    {
+        return new AiWorkflowItemCreator(
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
+    public function createAiWorkflowItemReader(): AiWorkflowItemReaderInterface
+    {
+        return new AiWorkflowItemReader(
+            aiWorkflowItemRepository: $this->getRepository(),
+        );
+    }
+
+    public function createAiWorkflowItemUpdater(): AiWorkflowItemUpdaterInterface
+    {
+        return new AiWorkflowItemUpdater(
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
+    public function createAiWorkflowStateMachineItemReader(): AiWorkflowStateMachineItemReaderInterface
+    {
+        return new AiWorkflowStateMachineItemReader(
+            repository: $this->getRepository(),
+        );
+    }
+
+    public function createAiWorkflowStateMachineItemUpdater(): AiWorkflowStateMachineItemUpdaterInterface
+    {
+        return new AiWorkflowStateMachineItemUpdater(
+            repository: $this->getRepository(),
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
+    // AI Workflow methods finish
 }

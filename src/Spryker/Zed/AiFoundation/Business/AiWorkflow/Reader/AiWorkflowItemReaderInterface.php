@@ -5,24 +5,13 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
-namespace Spryker\Zed\AiFoundation\Persistence;
+namespace Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader;
 
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
-use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
-use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 
-interface AiFoundationRepositoryInterface
+interface AiWorkflowItemReaderInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
-    public function getConversationHistoryCollection(
-        ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-    ): ConversationHistoryCollectionTransfer;
-
     /**
      * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
      *

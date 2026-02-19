@@ -275,4 +275,15 @@ interface AiFoundationConstants
      * @var string
      */
     public const CONVERSATION_HISTORY_CONTEXT_WINDOW = 'CONVERSATION_HISTORY_CONTEXT_WINDOW';
+
+    /**
+     * Specification:
+     * - Defines the state machine name used for AI workflow processing.
+     * - Used to identify and route items through the AI workflow state machine.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const AI_WORKFLOW_STATE_MACHINE_NAME = 'AiWorkflow';
 }

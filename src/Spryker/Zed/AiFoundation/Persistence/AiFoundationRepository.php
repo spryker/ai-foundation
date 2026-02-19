@@ -7,9 +7,12 @@
 
 namespace Spryker\Zed\AiFoundation\Persistence;
 
+use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery;
+use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery;
 use Spryker\Zed\Kernel\Persistence\AbstractRepository;
 
 /**
@@ -44,6 +47,34 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
     }
 
     /**
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
+     */
+    public function getAiWorkflowItemCollection(
+        AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
+    ): AiWorkflowItemCollectionTransfer {
+        $aiWorkflowItemCollection = new AiWorkflowItemCollectionTransfer();
+        $aiWorkflowItemQuery = SpyAiWorkflowItemQuery::create();
+
+        $aiWorkflowItemQuery = $this->applyAiWorkflowItemFilters(
+            $aiWorkflowItemQuery,
+            $aiWorkflowItemCriteriaTransfer,
+        );
+
+        /** @var \Propel\Runtime\Collection\ObjectCollection<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities */
+        $aiWorkflowItemEntities = $aiWorkflowItemQuery->find();
+
+        if ($aiWorkflowItemEntities->count() === 0) {
+            return $aiWorkflowItemCollection;
+        }
+
+        return $this->getFactory()
+            ->createAiWorkflowItemMapper()
+            ->mapAiWorkflowItemEntityCollectionToAiWorkflowItemCollectionTransfer($aiWorkflowItemEntities, $aiWorkflowItemCollection);
+    }
+
+    /**
      * @param \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery $query
      * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
      *
@@ -66,5 +97,36 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
         }
 
         return $query;
+    }
+
+    /**
+     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery $aiWorkflowItemQuery
+     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
+     *
+     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery
+     */
+    protected function applyAiWorkflowItemFilters(
+        SpyAiWorkflowItemQuery $aiWorkflowItemQuery,
+        AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
+    ): SpyAiWorkflowItemQuery {
+        $aiWorkflowItemConditions = $aiWorkflowItemCriteriaTransfer->getAiWorkflowItemConditions();
+
+        if ($aiWorkflowItemConditions === null) {
+            return $aiWorkflowItemQuery;
+        }
+
+        if ($aiWorkflowItemConditions->getAiWorkflowItemIds()) {
+            $aiWorkflowItemQuery->filterByIdAiWorkflowItem_In(
+                $aiWorkflowItemConditions->getAiWorkflowItemIds(),
+            );
+        }
+
+        if ($aiWorkflowItemConditions->getStateIds()) {
+            $aiWorkflowItemQuery->filterByFkStateMachineItemState_In(
+                $aiWorkflowItemConditions->getStateIds(),
+            );
+        }
+
+        return $aiWorkflowItemQuery;
     }
 }

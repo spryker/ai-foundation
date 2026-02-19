@@ -7,6 +7,10 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
@@ -44,5 +48,44 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
             ->getVendorAdapterPlugin()
             ->getVendorAdapter()
             ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createAiWorkflowItemCollection(
+        AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createAiWorkflowItemCreator()
+            ->createAiWorkflowItemCollection($aiWorkflowItemCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function updateAiWorkflowItemCollection(
+        AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
+    ): AiWorkflowItemCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createAiWorkflowItemUpdater()
+            ->updateAiWorkflowItemCollection($aiWorkflowItemCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getAiWorkflowItemCollection(
+        AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
+    ): AiWorkflowItemCollectionTransfer {
+        return $this->getFactory()
+            ->createAiWorkflowItemReader()
+            ->getAiWorkflowItemCollection($aiWorkflowItemCriteriaTransfer);
     }
 }

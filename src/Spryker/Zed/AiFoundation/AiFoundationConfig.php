@@ -25,6 +25,8 @@ class AiFoundationConfig extends AbstractBundleConfig
      */
     protected const DEFAULT_CONVERSATION_HISTORY_CONTEXT_WINDOW = 50000;
 
+    protected const DEFAULT_INITIAL_STATE = 'new';
+
     /**
      * @api
      *
@@ -51,5 +53,51 @@ class AiFoundationConfig extends AbstractBundleConfig
     public function getConversationHistoryContextWindow(): int
     {
         return $this->get(AiFoundationConstants::CONVERSATION_HISTORY_CONTEXT_WINDOW, static::DEFAULT_CONVERSATION_HISTORY_CONTEXT_WINDOW);
+    }
+
+    /**
+     * @api
+     *
+     * @return string
+     */
+    public function getAiWorkflowStateMachineName(): string
+    {
+        return AiFoundationConstants::AI_WORKFLOW_STATE_MACHINE_NAME;
+    }
+
+    /**
+     * Specification:
+     * - Returns a list of active AI workflow processes for the project.
+     * - Expected format: ['IntelligentTask01', 'IntelligentTask02'].
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getAiWorkflowActiveProcesses(): array
+    {
+        return [];
+    }
+
+    /**
+     * @api
+     *
+     * @return string
+     */
+    public function getAiWorkflowInitialStateForProcess(string $process): string
+    {
+        return $this->getAiWorkflowInitialStateMapForProcess()[$process] ?? static::DEFAULT_INITIAL_STATE;
+    }
+
+    /**
+     * Specification:
+     * - Returns a map of process names to their initial states for the project.
+     * - Expected format: ['IntelligentTask01' => 'new'].
+     *
+     * @return array<string, string>
+     */
+    protected function getAiWorkflowInitialStateMapForProcess(): array
+    {
+        return [];
     }
 }

@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace SprykerTest\Zed\AiFoundation;
 
 use Codeception\Actor;
+use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 
 /**
  * Inherited Methods
@@ -24,13 +26,13 @@ use Codeception\Actor;
  * @method void lookForwardTo($achieveValue)
  * @method void comment($description)
  * @method void pause($vars = [])
- * @method \Spryker\Zed\AiFoundation\Business\AiFoundationBusinessFactory getFactory()
+ * @method \Spryker\Zed\AiFoundation\Communication\AiFoundationCommunicationFactory getFactory()
  *
  * @SuppressWarnings(PHPMD)
  */
-class AiFoundationBusinessTester extends Actor
+class AiFoundationCommunicationTester extends Actor
 {
-    use _generated\AiFoundationBusinessTesterActions;
+    use _generated\AiFoundationCommunicationTesterActions;
 
     /**
      * Creates a test state machine process and state for AI Workflow testing.
@@ -50,5 +52,30 @@ class AiFoundationBusinessTester extends Actor
         ]);
 
         return (int)$stateMachineItemStateTransfer->getIdStateMachineItemState();
+    }
+
+    /**
+     * Creates a test AI workflow item in the database.
+     *
+     * @param array<string, mixed> $seed
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     */
+    public function haveAiWorkflowItem(array $seed = []): AiWorkflowItemTransfer
+    {
+        $contextData = $seed['context_data'] ?? ['test' => 'data'];
+        $fkStateMachineItemState = $seed['fk_state_machine_item_state'] ?? null;
+
+        $workflowItemTransfer = (new AiWorkflowItemTransfer())
+            ->setContextData($contextData)
+            ->setFkStateMachineItemState($fkStateMachineItemState);
+
+        $request = (new AiWorkflowItemCollectionRequestTransfer())
+            ->setIsTransactional(true)
+            ->addAiWorkflowItem($workflowItemTransfer);
+
+        $response = $this->getFacade()->createAiWorkflowItemCollection($request);
+
+        return $response->getAiWorkflowItems()->offsetGet(0);
     }
 }

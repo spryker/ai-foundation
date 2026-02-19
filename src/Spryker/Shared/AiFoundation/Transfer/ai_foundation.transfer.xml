@@ -22,6 +22,7 @@
         <property name="content" type="string"/>
         <property name="contentData" type="array" singular="contentData"/>
         <property name="attachments" type="Attachment[]" singular="attachment"/>
+        <property name="usage" type="Usage" description="Token usage for this message (input/output tokens)"/>
     </transfer>
 
     <transfer name="Attachment" strict="true">
@@ -42,6 +43,11 @@
         <property name="entityIdentifier" type="string"/>
     </transfer>
 
+    <transfer name="Usage" strict="true">
+        <property name="inputTokens" type="int" description="Number of input tokens consumed"/>
+        <property name="outputTokens" type="int" description="Number of output tokens generated"/>
+    </transfer>
+
     <transfer name="ConversationHistory" strict="true">
         <property name="conversationReference" type="string" description="Unique identifier for a conversation thread."/>
         <property name="messages" type="PromptMessage[]" singular="message" description="Collection of conversation messages in PromptMessage format."/>
@@ -60,5 +66,46 @@
 
     <transfer name="ConversationHistoryCollection" strict="true">
         <property name="conversationHistories" type="ConversationHistory[]" singular="conversationHistory" description="Collection of conversation histories."/>
+    </transfer>
+
+    <transfer name="AiWorkflowItem" strict="true">
+        <property name="idAiWorkflowItem" type="int"/>
+        <property name="fkStateMachineItemState" type="int"/>
+        <property name="contextData" type="array" singular="contextDataItem"/>
+        <property name="state" type="StateMachineItemState"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCriteria" strict="true">
+        <property name="aiWorkflowItemConditions" type="AiWorkflowItemConditions"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemConditions" strict="true">
+        <property name="aiWorkflowItemIds" type="int[]" singular="aiWorkflowItemId"/>
+        <property name="stateIds" type="int[]" singular="stateId"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollection" strict="true">
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollectionRequest" strict="true">
+        <property name="isTransactional" type="bool"/>
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+    </transfer>
+
+    <transfer name="AiWorkflowItemCollectionResponse" strict="true">
+        <property name="aiWorkflowItems" type="AiWorkflowItem[]" singular="aiWorkflowItem"/>
+        <property name="errors" type="Error[]" singular="error" description="List of errors encountered during the operation, if any."/>
+        <property name="isSuccessful" type="bool" description="Indicates whether the operation was successful."/>
+    </transfer>
+
+    <transfer name="StateMachineItem">
+        <property name="identifier" type="int"/>
+        <property name="idItemState" type="int"/>
+    </transfer>
+
+    <transfer name="StateMachineItemState">
+        <property name="idStateMachineItemState" type="string"/>
+        <property name="name" type="string"/>
     </transfer>
 </transfers>

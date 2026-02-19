@@ -7,9 +7,11 @@
 
 namespace Spryker\Zed\AiFoundation\Persistence;
 
+use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
 use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery;
+use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 
 /**
@@ -82,5 +84,58 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
         }
 
         return $query;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
+     */
+    public function createAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
+    {
+        $aiWorkflowItemEntity = new SpyAiWorkflowItem();
+
+        $aiWorkflowItemEntity = $this->getFactory()->createAiWorkflowItemMapper()->mapAiWorkflowItemTransferToEntity(
+            $aiWorkflowItemTransfer,
+            $aiWorkflowItemEntity,
+        );
+
+        $aiWorkflowItemEntity->save();
+
+        return $this->getFactory()->createAiWorkflowItemMapper()->mapAiWorkflowItemEntityToTransfer(
+            $aiWorkflowItemEntity,
+            $aiWorkflowItemTransfer,
+        );
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer Returns original transfer if workflow item not found.
+     */
+    public function updateAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
+    {
+        $aiWorkflowItemTransfer->requireIdAiWorkflowItem();
+
+        $aiWorkflowItemEntity = $this->getFactory()
+            ->createAiWorkflowItemQuery()
+            ->filterByIdAiWorkflowItem($aiWorkflowItemTransfer->getIdAiWorkflowItem())
+            ->findOne();
+
+        if ($aiWorkflowItemEntity === null) {
+            return $aiWorkflowItemTransfer;
+        }
+
+        $aiWorkflowItemEntity = $this->getFactory()->createAiWorkflowItemMapper()->mapAiWorkflowItemTransferToEntity(
+            $aiWorkflowItemTransfer,
+            $aiWorkflowItemEntity,
+        );
+
+        $aiWorkflowItemEntity->save();
+
+        return $this->getFactory()->createAiWorkflowItemMapper()->mapAiWorkflowItemEntityToTransfer(
+            $aiWorkflowItemEntity,
+            $aiWorkflowItemTransfer,
+        );
     }
 }

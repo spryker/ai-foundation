@@ -16,7 +16,9 @@ use NeuronAI\Chat\Enums\AttachmentContentType;
 use NeuronAI\Chat\Enums\AttachmentType;
 use NeuronAI\Chat\Messages\AssistantMessage;
 use NeuronAI\Chat\Messages\Message;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Providers\AIProviderInterface;
+use ReflectionProperty;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
@@ -364,6 +366,72 @@ class AiFoundationFacadeTest extends Unit
         $facade->prompt($promptRequestTransfer);
     }
 
+    public function testPromptReturnsMessageWithUsageWhenProviderIncludesTokenCounts(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->expects($this->once())
+            ->method('systemPrompt')
+            ->with(static::TEST_SYSTEM_PROMPT)
+            ->willReturnSelf();
+
+        $usage = new Usage(inputTokens: 100, outputTokens: 50);
+        $mockMessage = $this->createMock(AssistantMessage::class);
+        $mockMessage->method('getContent')->willReturn(static::TEST_ASSISTANT_RESPONSE);
+        $mockMessage->method('getUsage')->willReturn($usage);
+        $mockMessage->method('getAttachments')->willReturn([]);
+
+        $mockProvider->expects($this->once())
+            ->method('chat')
+            ->willReturn($mockMessage);
+
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertSame(static::TEST_ASSISTANT_RESPONSE, $promptResponseTransfer->getMessage()->getContent());
+        $this->assertNotNull($promptResponseTransfer->getMessage()->getUsage());
+        $this->assertSame(100, $promptResponseTransfer->getMessage()->getUsage()->getInputTokens());
+        $this->assertSame(50, $promptResponseTransfer->getMessage()->getUsage()->getOutputTokens());
+    }
+
+    public function testGivenProviderReturnsMessageWithoutUsageWhenPromptingThenUsageIsNull(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningNoUsage();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertNull($promptResponseTransfer->getMessage()->getUsage());
+    }
+
+    public function testGivenProviderReturnsMessageWithZeroTokenUsageWhenPromptingThenUsageIsMappedCorrectly(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningZeroTokenUsage();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertNotNull($promptResponseTransfer->getMessage()->getUsage());
+        $this->assertSame(0, $promptResponseTransfer->getMessage()->getUsage()->getInputTokens());
+        $this->assertSame(0, $promptResponseTransfer->getMessage()->getUsage()->getOutputTokens());
+    }
+
     protected function createPromptRequestTransfer(): PromptRequestTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
@@ -459,6 +527,26 @@ class AiFoundationFacadeTest extends Unit
         return $mockProvider;
     }
 
+    protected function createMockAiProviderWithUsage(int $inputTokens, int $outputTokens): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+
+        $mockProvider->expects($this->once())
+            ->method('systemPrompt')
+            ->with(static::TEST_SYSTEM_PROMPT)
+            ->willReturnSelf();
+
+        $usage = new Usage(inputTokens: $inputTokens, outputTokens: $outputTokens);
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+        $this->setMessageUsage($assistantMessage, $usage);
+
+        $mockProvider->expects($this->once())
+            ->method('chat')
+            ->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
     protected function createMockProviderExpectingAttachment(AttachmentType $expectedType, AttachmentContentType $expectedContentType): AIProviderInterface
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
@@ -517,6 +605,71 @@ class AiFoundationFacadeTest extends Unit
         $mockProvider->method('chat')->willReturn($assistantMessage);
 
         return $mockProvider;
+    }
+
+    protected function createMockProviderReturningUsage(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+
+        $mockProvider->expects($this->once())
+            ->method('systemPrompt')
+            ->with(static::TEST_SYSTEM_PROMPT)
+            ->willReturnSelf();
+
+        $usage = new Usage(inputTokens: 100, outputTokens: 50);
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+        $this->setMessageUsage($assistantMessage, $usage);
+
+        $mockProvider->expects($this->once())
+            ->method('chat')
+            ->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderReturningNoUsage(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+
+        $mockProvider->expects($this->once())
+            ->method('systemPrompt')
+            ->with(static::TEST_SYSTEM_PROMPT)
+            ->willReturnSelf();
+
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+
+        $mockProvider->expects($this->once())
+            ->method('chat')
+            ->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderReturningZeroTokenUsage(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+
+        $mockProvider->expects($this->once())
+            ->method('systemPrompt')
+            ->with(static::TEST_SYSTEM_PROMPT)
+            ->willReturnSelf();
+
+        $usage = new Usage(inputTokens: 0, outputTokens: 0);
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+        $this->setMessageUsage($assistantMessage, $usage);
+
+        $mockProvider->expects($this->once())
+            ->method('chat')
+            ->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    protected function setMessageUsage(Message $message, Usage $usage): void
+    {
+        $reflectionProperty = new ReflectionProperty($message, 'usage');
+        $reflectionProperty->setAccessible(true);
+        $reflectionProperty->setValue($message, $usage);
     }
 
     protected function assertAttachmentMatchesExpectedValues(AttachmentTransfer $attachmentTransfer): void

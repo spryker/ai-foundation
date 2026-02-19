@@ -12,6 +12,7 @@ use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
 use Generated\Shared\Transfer\ToolInvocationTransfer;
+use Generated\Shared\Transfer\UsageTransfer;
 use InvalidArgumentException;
 use NeuronAI\Chat\Attachments\Attachment;
 use NeuronAI\Chat\Enums\AttachmentContentType;
@@ -20,6 +21,7 @@ use NeuronAI\Chat\Messages\AssistantMessage;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Chat\Messages\ToolCallResultMessage;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Chat\Messages\UserMessage;
 use NeuronAI\Tools\ToolInterface;
 use ReflectionClass;
@@ -61,7 +63,8 @@ class NeuronAiMessageMapper
     public function mapProviderResponseToPromptResponse(Message $message): PromptResponseTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
-            ->setContent($message->getContent());
+            ->setContent($message->getContent())
+            ->setUsage($this->mapUsageToUsageTransfer($message->getUsage()));
 
         foreach ($message->getAttachments() as $attachment) {
             $attachmentTransfer = $this->mapAttachmentToAttachmentTransfer($attachment);
@@ -81,7 +84,8 @@ class NeuronAiMessageMapper
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
             ->setType($this->mapMessageRole($message))
-            ->setContent($message->getContent());
+            ->setContent($message->getContent())
+            ->setUsage($this->mapUsageToUsageTransfer($message->getUsage()));
 
         foreach ($message->getAttachments() as $attachment) {
             $attachmentTransfer = $this->mapAttachmentToAttachmentTransfer($attachment);
@@ -105,6 +109,22 @@ class NeuronAiMessageMapper
         }
 
         return $promptMessages;
+    }
+
+    /**
+     * @param \NeuronAI\Chat\Messages\Usage|null $usage
+     *
+     * @return \Generated\Shared\Transfer\UsageTransfer|null
+     */
+    protected function mapUsageToUsageTransfer(?Usage $usage): ?UsageTransfer
+    {
+        if ($usage === null) {
+            return null;
+        }
+
+        return (new UsageTransfer())
+            ->setInputTokens($usage->inputTokens)
+            ->setOutputTokens($usage->outputTokens);
     }
 
     /**
