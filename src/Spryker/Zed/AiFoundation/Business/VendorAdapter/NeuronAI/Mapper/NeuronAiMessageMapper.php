@@ -36,11 +36,6 @@ class NeuronAiMessageMapper
     ) {
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\PromptMessageTransfer $promptMessageTransfer
-     *
-     * @return \NeuronAI\Chat\Messages\Message
-     */
     public function mapPromptMessageToProviderMessage(PromptMessageTransfer $promptMessageTransfer): Message
     {
         $content = $promptMessageTransfer->getContent() ?? $promptMessageTransfer->getContentData();
@@ -55,11 +50,6 @@ class NeuronAiMessageMapper
         return $userMessage;
     }
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function mapProviderResponseToPromptResponse(Message $message): PromptResponseTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
@@ -75,11 +65,6 @@ class NeuronAiMessageMapper
             ->setMessage($promptMessageTransfer);
     }
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     *
-     * @return \Generated\Shared\Transfer\PromptMessageTransfer
-     */
     public function mapProviderMessageToPromptMessage(Message $message): PromptMessageTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
@@ -111,11 +96,6 @@ class NeuronAiMessageMapper
         return $promptMessages;
     }
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Usage|null $usage
-     *
-     * @return \Generated\Shared\Transfer\UsageTransfer|null
-     */
     protected function mapUsageToUsageTransfer(?Usage $usage): ?UsageTransfer
     {
         if ($usage === null) {
@@ -127,11 +107,6 @@ class NeuronAiMessageMapper
             ->setOutputTokens($usage->outputTokens);
     }
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     *
-     * @return string
-     */
     protected function mapMessageRole(Message $message): string
     {
         return match (true) {
@@ -145,11 +120,6 @@ class NeuronAiMessageMapper
         };
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AttachmentTransfer $attachmentTransfer
-     *
-     * @return \NeuronAI\Chat\Attachments\Attachment
-     */
     protected function mapAttachmentTransferToAttachment(AttachmentTransfer $attachmentTransfer): Attachment
     {
         $type = $this->mapAttachmentType($attachmentTransfer->getTypeOrFail());
@@ -163,11 +133,6 @@ class NeuronAiMessageMapper
         );
     }
 
-    /**
-     * @param \NeuronAI\Chat\Attachments\Attachment $attachment
-     *
-     * @return \Generated\Shared\Transfer\AttachmentTransfer
-     */
     protected function mapAttachmentToAttachmentTransfer(Attachment $attachment): AttachmentTransfer
     {
         $type = $this->mapAttachmentTypeToConstant($attachment->type);
@@ -180,11 +145,6 @@ class NeuronAiMessageMapper
             ->setMediaType($attachment->mediaType);
     }
 
-    /**
-     * @param string $type
-     *
-     * @return \NeuronAI\Chat\Enums\AttachmentType
-     */
     protected function mapAttachmentType(string $type): AttachmentType
     {
         return match ($type) {
@@ -194,11 +154,6 @@ class NeuronAiMessageMapper
         };
     }
 
-    /**
-     * @param string $contentType
-     *
-     * @return \NeuronAI\Chat\Enums\AttachmentContentType
-     */
     protected function mapAttachmentContentType(string $contentType): AttachmentContentType
     {
         return match ($contentType) {
@@ -208,11 +163,6 @@ class NeuronAiMessageMapper
         };
     }
 
-    /**
-     * @param \NeuronAI\Chat\Enums\AttachmentType $type
-     *
-     * @return string
-     */
     protected function mapAttachmentTypeToConstant(AttachmentType $type): string
     {
         return match ($type) {
@@ -221,11 +171,6 @@ class NeuronAiMessageMapper
         };
     }
 
-    /**
-     * @param \NeuronAI\Chat\Enums\AttachmentContentType $contentType
-     *
-     * @return string
-     */
     protected function mapAttachmentContentTypeToConstant(AttachmentContentType $contentType): string
     {
         return match ($contentType) {
@@ -251,11 +196,6 @@ class NeuronAiMessageMapper
         return $toolInvocations;
     }
 
-    /**
-     * @param \NeuronAI\Tools\ToolInterface $tool
-     *
-     * @return \Generated\Shared\Transfer\ToolInvocationTransfer
-     */
     protected function mapExecutedToolToToolInvocation(ToolInterface $tool): ToolInvocationTransfer
     {
         return (new ToolInvocationTransfer())
@@ -274,12 +214,6 @@ class NeuronAiMessageMapper
         return $this->transferJsonSchemaMapper->buildJsonSchema($structuredResponseTransfer);
     }
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
-     *
-     * @return \Spryker\Shared\Kernel\Transfer\AbstractTransfer
-     */
     public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer
     {
         $content = $this->transferJsonSchemaMapper->extractJsonFromText($message->getContent());

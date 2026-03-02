@@ -14,18 +14,8 @@ use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 
 interface NeuronAiMessageMapperInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\PromptMessageTransfer $promptMessageTransfer
-     *
-     * @return \NeuronAI\Chat\Messages\Message
-     */
     public function mapPromptMessageToProviderMessage(PromptMessageTransfer $promptMessageTransfer): Message;
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function mapProviderResponseToPromptResponse(Message $message): PromptResponseTransfer;
 
     /**
@@ -35,11 +25,5 @@ interface NeuronAiMessageMapperInterface
      */
     public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array;
 
-    /**
-     * @param \NeuronAI\Chat\Messages\Message $message
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
-     *
-     * @return \Spryker\Shared\Kernel\Transfer\AbstractTransfer
-     */
     public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer;
 }

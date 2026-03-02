@@ -18,13 +18,6 @@ use Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface;
 
 class DbChatHistory extends AbstractChatHistory
 {
-    /**
-     * @param \Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface $entityManager
-     * @param \Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface $repository
-     * @param \Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper $messageMapper
-     * @param string $conversationReference
-     * @param int $contextWindow
-     */
     public function __construct(
         protected AiFoundationEntityManagerInterface $entityManager,
         protected AiFoundationRepositoryInterface $repository,
@@ -55,9 +48,6 @@ class DbChatHistory extends AbstractChatHistory
         return $this;
     }
 
-    /**
-     * @return \NeuronAI\Chat\History\ChatHistoryInterface
-     */
     protected function clear(): ChatHistoryInterface
     {
         $criteria = (new ConversationHistoryCriteriaTransfer())
@@ -71,9 +61,6 @@ class DbChatHistory extends AbstractChatHistory
         return $this;
     }
 
-    /**
-     * @return void
-     */
     protected function loadHistoryFromDatabase(): void
     {
         $criteria = (new ConversationHistoryCriteriaTransfer())

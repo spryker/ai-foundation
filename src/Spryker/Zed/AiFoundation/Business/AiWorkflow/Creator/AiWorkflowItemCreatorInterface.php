@@ -12,11 +12,6 @@ use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 
 interface AiWorkflowItemCreatorInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
-     */
     public function createAiWorkflowItemCollection(
         AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
     ): AiWorkflowItemCollectionResponseTransfer;

@@ -20,11 +20,6 @@ use Spryker\Zed\Kernel\Persistence\AbstractRepository;
  */
 class AiFoundationRepository extends AbstractRepository implements AiFoundationRepositoryInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {
@@ -46,11 +41,6 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
             );
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
-     */
     public function getAiWorkflowItemCollection(
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
     ): AiWorkflowItemCollectionTransfer {
@@ -74,12 +64,6 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
             ->mapAiWorkflowItemEntityCollectionToAiWorkflowItemCollectionTransfer($aiWorkflowItemEntities, $aiWorkflowItemCollection);
     }
 
-    /**
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery $query
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery
-     */
     protected function applyConversationHistoryFilters(
         SpyAiConversationHistoryQuery $query,
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
@@ -99,12 +83,6 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
         return $query;
     }
 
-    /**
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery $aiWorkflowItemQuery
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery
-     */
     protected function applyAiWorkflowItemFilters(
         SpyAiWorkflowItemQuery $aiWorkflowItemQuery,
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer

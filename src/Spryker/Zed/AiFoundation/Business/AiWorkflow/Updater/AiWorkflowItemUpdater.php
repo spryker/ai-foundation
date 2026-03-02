@@ -18,11 +18,6 @@ class AiWorkflowItemUpdater implements AiWorkflowItemUpdaterInterface
     {
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
-     */
     public function updateAiWorkflowItemCollection(
         AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
     ): AiWorkflowItemCollectionResponseTransfer {

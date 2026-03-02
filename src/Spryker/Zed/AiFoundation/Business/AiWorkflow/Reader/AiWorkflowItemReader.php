@@ -17,11 +17,6 @@ class AiWorkflowItemReader implements AiWorkflowItemReaderInterface
     {
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
-     */
     public function getAiWorkflowItemCollection(
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
     ): AiWorkflowItemCollectionTransfer {

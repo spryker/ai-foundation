@@ -15,12 +15,6 @@ use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory;
 
 class ConversationHistoryMapper
 {
-    /**
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory $entity
-     * @param \Generated\Shared\Transfer\ConversationHistoryTransfer $transfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryTransfer
-     */
     public function mapEntityToTransfer(
         SpyAiConversationHistory $entity,
         ConversationHistoryTransfer $transfer
@@ -36,12 +30,6 @@ class ConversationHistoryMapper
         return $transfer;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryTransfer $transfer
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory $entity
-     *
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory
-     */
     public function mapTransferToEntity(
         ConversationHistoryTransfer $transfer,
         SpyAiConversationHistory $entity

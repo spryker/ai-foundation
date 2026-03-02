@@ -14,20 +14,10 @@ use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 
 interface AiFoundationRepositoryInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer;
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
-     */
     public function getAiWorkflowItemCollection(
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
     ): AiWorkflowItemCollectionTransfer;

@@ -18,12 +18,6 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
 {
     protected const string CONTEXT_WINDOW = 'context_window';
 
-    /**
-     * @param \Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface $entityManager
-     * @param \Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface $repository
-     * @param \Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper $messageMapper
-     * @param \Spryker\Zed\AiFoundation\AiFoundationConfig $config
-     */
     public function __construct(
         protected AiFoundationEntityManagerInterface $entityManager,
         protected AiFoundationRepositoryInterface $repository,

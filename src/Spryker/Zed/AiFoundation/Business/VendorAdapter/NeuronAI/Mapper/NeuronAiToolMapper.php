@@ -51,11 +51,6 @@ class NeuronAiToolMapper implements NeuronAiToolMapperInterface
         return $neuronTools;
     }
 
-    /**
-     * @param \Spryker\Zed\AiFoundation\Dependency\Tools\ToolPluginInterface $tool
-     *
-     * @return \NeuronAI\Tools\ToolInterface
-     */
     protected function mapToolToNeuronTool(ToolPluginInterface $tool): ToolInterface
     {
         $neuronTool = new Tool(
@@ -75,11 +70,6 @@ class NeuronAiToolMapper implements NeuronAiToolMapperInterface
         return $neuronTool;
     }
 
-    /**
-     * @param \Spryker\Zed\AiFoundation\Dependency\Tools\ToolParameterInterface $parameter
-     *
-     * @return \NeuronAI\Tools\ToolProperty
-     */
     protected function mapParameterToToolProperty(ToolParameterInterface $parameter): ToolProperty
     {
         return new ToolProperty(

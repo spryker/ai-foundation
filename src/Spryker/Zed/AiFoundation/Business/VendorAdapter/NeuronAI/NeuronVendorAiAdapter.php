@@ -80,11 +80,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     ) {
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer
     {
         $resolvedAiConfiguration = $this->resolveAiConfiguration($promptRequest);
@@ -111,14 +106,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         return $this->executePlainPrompt($provider, $message, $maxRetries, $chatHistory);
     }
 
-    /**
-     * @param \NeuronAI\Providers\AIProviderInterface $provider
-     * @param \NeuronAI\Chat\Messages\Message $message
-     * @param int $maxRetries
-     * @param \NeuronAI\Chat\History\ChatHistoryInterface|null $chatHistory
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     protected function executePlainPrompt(
         AIProviderInterface $provider,
         Message $message,
@@ -161,15 +148,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         return $this->finalizePromptResponse($promptResponseTransfer, $toolInvocationTransfers, $exceptions);
     }
 
-    /**
-     * @param \NeuronAI\Providers\AIProviderInterface $provider
-     * @param \NeuronAI\Chat\Messages\Message $message
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredSchema
-     * @param int $maxRetries
-     * @param \NeuronAI\Chat\History\ChatHistoryInterface|null $chatHistory
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     protected function executeStructuredPrompt(
         AIProviderInterface $provider,
         Message $message,
@@ -323,12 +301,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         }
     }
 
-    /**
-     * @param \NeuronAI\Providers\AIProviderInterface $provider
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
-     *
-     * @return \NeuronAI\Providers\AIProviderInterface
-     */
     protected function setToolsToProvider(
         AIProviderInterface $provider,
         PromptRequestTransfer $promptRequest,

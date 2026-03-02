@@ -14,18 +14,8 @@ use Generated\Shared\Transfer\PromptResponseTransfer;
 
 interface AiFoundationStubInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function prompt(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer;
 
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer;

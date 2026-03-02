@@ -102,11 +102,6 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
         return $schema;
     }
 
-    /**
-     * @param string $phpType
-     *
-     * @return string
-     */
     protected function mapPhpTypeToJsonSchemaType(string $phpType): string
     {
         return match ($phpType) {

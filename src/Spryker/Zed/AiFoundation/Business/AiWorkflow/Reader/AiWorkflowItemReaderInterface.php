@@ -12,11 +12,6 @@ use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
 
 interface AiWorkflowItemReaderInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
-     */
     public function getAiWorkflowItemCollection(
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
     ): AiWorkflowItemCollectionTransfer;

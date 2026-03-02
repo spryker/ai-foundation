@@ -21,33 +21,21 @@ use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
  */
 class AiFoundationPersistenceFactory extends AbstractPersistenceFactory
 {
-    /**
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery
-     */
     public function createConversationHistoryQuery(): SpyAiConversationHistoryQuery
     {
         return SpyAiConversationHistoryQuery::create();
     }
 
-    /**
-     * @return \Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\ConversationHistoryMapper
-     */
     public function createConversationHistoryMapper(): ConversationHistoryMapper
     {
         return new ConversationHistoryMapper();
     }
 
-    /**
-     * @return \Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapperInterface
-     */
     public function createAiWorkflowItemMapper(): AiWorkflowItemMapperInterface
     {
         return new AiWorkflowItemMapper();
     }
 
-    /**
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery
-     */
     public function createAiWorkflowItemQuery(): SpyAiWorkflowItemQuery
     {
         return SpyAiWorkflowItemQuery::create();

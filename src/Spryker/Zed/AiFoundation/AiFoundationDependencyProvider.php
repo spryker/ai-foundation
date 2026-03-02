@@ -22,11 +22,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 
     public const PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     public function provideBusinessLayerDependencies(Container $container): Container
     {
         $container = parent::provideBusinessLayerDependencies($container);
@@ -50,11 +45,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         return new NeuronAiVendorProviderPlugin();
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addAiToolSetPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_AI_TOOL_SET, function (): array {
@@ -72,11 +62,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         return [];
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     public function provideCommunicationLayerDependencies(Container $container): Container
     {
         $container = parent::provideCommunicationLayerDependencies($container);
@@ -87,11 +72,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         return $container;
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addAiWorkflowCommandPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_AI_WORKFLOW_COMMAND, function (): array {
@@ -109,11 +89,6 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         return [];
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addAiWorkflowConditionPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_AI_WORKFLOW_CONDITION, function (): array {

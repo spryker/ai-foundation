@@ -17,17 +17,11 @@ use Spryker\Client\ZedRequest\ZedRequestClientInterface;
  */
 class AiFoundationFactory extends AbstractFactory
 {
-    /**
-     * @return \Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface
-     */
     public function createZedAiFoundationStub(): AiFoundationStubInterface
     {
         return new AiFoundationStub($this->getZedRequestClient());
     }
 
-    /**
-     * @return \Spryker\Client\ZedRequest\ZedRequestClientInterface
-     */
     public function getZedRequestClient(): ZedRequestClientInterface
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::CLIENT_ZED_REQUEST);

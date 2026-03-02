@@ -19,11 +19,6 @@ use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
  */
 class AiFoundationEntityManager extends AbstractEntityManager implements AiFoundationEntityManagerInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryTransfer $conversationHistoryTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryTransfer
-     */
     public function saveConversationHistory(
         ConversationHistoryTransfer $conversationHistoryTransfer
     ): ConversationHistoryTransfer {
@@ -43,11 +38,6 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
             ->mapEntityToTransfer($entity, $conversationHistoryTransfer);
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return void
-     */
     public function deleteConversationHistory(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): void {
@@ -61,12 +51,6 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
         $conversationHistoryQuery->delete();
     }
 
-    /**
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery $query
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery
-     */
     protected function applyConversationHistoryFilters(
         SpyAiConversationHistoryQuery $query,
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
@@ -86,11 +70,6 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
         return $query;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
-     */
     public function createAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer
     {
         $aiWorkflowItemEntity = new SpyAiWorkflowItem();

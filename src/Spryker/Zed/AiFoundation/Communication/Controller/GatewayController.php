@@ -18,21 +18,11 @@ use Spryker\Zed\Kernel\Communication\Controller\AbstractGatewayController;
  */
 class GatewayController extends AbstractGatewayController
 {
-    /**
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function promptAction(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer
     {
         return $this->getFacade()->prompt($promptRequestTransfer);
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
     public function getConversationHistoryCollectionAction(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {

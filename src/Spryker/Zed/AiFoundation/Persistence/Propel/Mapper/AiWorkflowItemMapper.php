@@ -23,12 +23,6 @@ class AiWorkflowItemMapper implements AiWorkflowItemMapperInterface
      */
     protected const int DEFAULT_CONTEXT_DATA_JSON_DECODE_DEPTH = 512;
 
-    /**
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem $aiWorkflowItemEntity
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
-     */
     public function mapAiWorkflowItemEntityToTransfer(
         SpyAiWorkflowItem $aiWorkflowItemEntity,
         AiWorkflowItemTransfer $aiWorkflowItemTransfer
@@ -54,12 +48,6 @@ class AiWorkflowItemMapper implements AiWorkflowItemMapperInterface
         return $aiWorkflowItemTransfer;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
-     * @param \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem $aiWorkflowItemEntity
-     *
-     * @return \Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem
-     */
     public function mapAiWorkflowItemTransferToEntity(
         AiWorkflowItemTransfer $aiWorkflowItemTransfer,
         SpyAiWorkflowItem $aiWorkflowItemEntity

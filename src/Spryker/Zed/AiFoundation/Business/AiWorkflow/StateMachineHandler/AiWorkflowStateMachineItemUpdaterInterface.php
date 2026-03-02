@@ -11,10 +11,5 @@ use Generated\Shared\Transfer\StateMachineItemTransfer;
 
 interface AiWorkflowStateMachineItemUpdaterInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\StateMachineItemTransfer $stateMachineItemTransfer
-     *
-     * @return bool
-     */
     public function updateAiWorkflowItemState(StateMachineItemTransfer $stateMachineItemTransfer): bool;
 }

@@ -15,11 +15,6 @@ use Spryker\Client\ZedRequest\Stub\ZedRequestStub;
 
 class AiFoundationStub extends ZedRequestStub implements AiFoundationStubInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
-     */
     public function prompt(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer
     {
         /** @var \Generated\Shared\Transfer\PromptResponseTransfer $promptResponseTransfer */
@@ -31,11 +26,6 @@ class AiFoundationStub extends ZedRequestStub implements AiFoundationStubInterfa
         return $promptResponseTransfer;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
-     */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {
