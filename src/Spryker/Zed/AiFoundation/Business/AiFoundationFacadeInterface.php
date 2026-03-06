@@ -7,6 +7,8 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
@@ -74,6 +76,22 @@ interface AiFoundationFacadeInterface
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer;
+
+    /**
+     * Specification:
+     * - Creates AI interaction log entries from a collection request.
+     * - Persists log records for auditing AI prompt interactions.
+     * - Returns `AiInteractionLogCollectionResponseTransfer` with created entries.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
+     *
+     * @return \Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer
+     */
+    public function createAiInteractionLogCollection(
+        AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
+    ): AiInteractionLogCollectionResponseTransfer;
 
     /**
      * Specification:

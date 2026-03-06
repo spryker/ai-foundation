@@ -5,12 +5,18 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation\Persistence;
 
+use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
 use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery;
+use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 
@@ -137,5 +143,26 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
             $aiWorkflowItemEntity,
             $aiWorkflowItemTransfer,
         );
+    }
+
+    public function createAiInteractionLogCollection(
+        AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
+    ): AiInteractionLogCollectionResponseTransfer {
+        $aiInteractionLogCollectionTransfer = new AiInteractionLogCollectionTransfer();
+        $mapper = $this->getFactory()->createAiInteractionLogMapper();
+
+        foreach ($aiInteractionLogCollectionRequestTransfer->getAiInteractionLogCollectionOrFail()->getAiInteractionLogs() as $aiInteractionLogTransfer) {
+            $entity = $mapper->mapAiInteractionLogTransferToEntity($aiInteractionLogTransfer, new SpyAiInteractionLog());
+
+            $entity->save();
+
+            $aiInteractionLogTransfer->setIdAiInteractionLog($entity->getIdAiInteractionLog());
+
+            $aiInteractionLogCollectionTransfer->addAiInteractionLog($aiInteractionLogTransfer);
+        }
+
+        return (new AiInteractionLogCollectionResponseTransfer())
+            ->setAiInteractionLogCollection($aiInteractionLogCollectionTransfer)
+            ->setIsSuccessful(true);
     }
 }

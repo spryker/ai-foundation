@@ -8,6 +8,8 @@
         "neuron-core/neuron-ai": "^2.9.3",
         "php": ">=8.3",
         "spryker/kernel": "^3.30.0",
+        "spryker/log-extension": "^1.0.0",
+        "spryker/monolog": "^2.0.5",
         "spryker/propel-orm": "^1.15.0",
         "spryker/state-machine": "^2.0.0",
         "spryker/transfer": "^3.27.0",
@@ -15,8 +17,12 @@
     },
     "require-dev": {
         "spryker/code-sniffer": "*",
+        "spryker/log": "*",
         "spryker/propel": "*",
         "spryker/testify": "*"
+    },
+    "suggest": {
+        "spryker/log": "Provides logging infrastructure and audit log support for Spryker features."
     },
     "autoload": {
         "psr-4": {

@@ -5,9 +5,15 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation\Business;
 
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilder;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilderInterface;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreator;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreatorInterface;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreator;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreatorInterface;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReader;
@@ -55,6 +61,7 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
             chatHistoryResolver: $this->createNeuronAiChatHistoryResolver(),
             aiConfigurations: $this->getConfig()->getAiConfigurations(),
             aiToolSetPlugins: $this->getAiToolSetPlugins(),
+            postPromptPlugins: $this->getPostPromptPlugins(),
         );
     }
 
@@ -99,6 +106,30 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return new TransferJsonSchemaMapper();
     }
+
+    // AI Interaction Log methods start
+
+    public function createAiInteractionLogContextBuilder(): AiInteractionLogContextBuilderInterface
+    {
+        return new AiInteractionLogContextBuilder();
+    }
+
+    public function createAiInteractionLogCreator(): AiInteractionLogCreatorInterface
+    {
+        return new AiInteractionLogCreator(
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface>
+     */
+    public function getPostPromptPlugins(): array
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_POST_PROMPT);
+    }
+
+    // AI Interaction Log methods finish
 
     // AI Workflow methods start
 

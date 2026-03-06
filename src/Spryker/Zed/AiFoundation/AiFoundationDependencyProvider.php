@@ -5,6 +5,8 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation;
 
 use Spryker\Zed\AiFoundation\Communication\Plugin\AiFoundation\NeuronAiVendorProviderPlugin;
@@ -14,13 +16,19 @@ use Spryker\Zed\Kernel\Container;
 
 class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 {
-    public const VENDOR_PROVIDER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
+    public const string VENDOR_PROVIDER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
 
-    public const PLUGINS_AI_TOOL_SET = 'PLUGINS_AI_TOOL_SET';
+    public const string PLUGINS_AI_TOOL_SET = 'PLUGINS_AI_TOOL_SET';
 
-    public const PLUGINS_AI_WORKFLOW_COMMAND = 'PLUGINS_AI_WORKFLOW_COMMAND';
+    public const string PLUGINS_AI_WORKFLOW_COMMAND = 'PLUGINS_AI_WORKFLOW_COMMAND';
 
-    public const PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
+    public const string PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
+
+    public const string PLUGINS_POST_PROMPT = 'PLUGINS_POST_PROMPT';
+
+    public const string PLUGINS_AI_INTERACTION_LOG_HANDLER = 'PLUGINS_AI_INTERACTION_LOG_HANDLER';
+
+    public const string PLUGINS_AI_INTERACTION_LOG_PROCESSOR = 'PLUGINS_AI_INTERACTION_LOG_PROCESSOR';
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
@@ -32,6 +40,7 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = parent::provideBusinessLayerDependencies($container);
         $container = $this->addVendorAdapterPlugin($container);
         $container = $this->addAiToolSetPlugins($container);
+        $container = $this->addPostPromptPlugins($container);
 
         return $container;
     }
@@ -83,6 +92,8 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 
         $container = $this->addAiWorkflowCommandPlugins($container);
         $container = $this->addAiWorkflowConditionPlugins($container);
+        $container = $this->addAiInteractionLogHandlerPlugins($container);
+        $container = $this->addAiInteractionLogProcessorPlugins($container);
 
         return $container;
     }
@@ -127,6 +138,57 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
      * @return array<\Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface>
      */
     protected function getAiWorkflowConditionPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addPostPromptPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_POST_PROMPT, function (Container $container): array {
+            return $this->getPostPromptPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface>
+     */
+    protected function getPostPromptPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addAiInteractionLogHandlerPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_AI_INTERACTION_LOG_HANDLER, function (Container $container): array {
+            return $this->getAiInteractionLogHandlerPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Shared\Log\Dependency\Plugin\LogHandlerPluginInterface>
+     */
+    protected function getAiInteractionLogHandlerPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addAiInteractionLogProcessorPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_AI_INTERACTION_LOG_PROCESSOR, function (Container $container): array {
+            return $this->getAiInteractionLogProcessorPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Shared\Log\Dependency\Plugin\LogProcessorPluginInterface>
+     */
+    protected function getAiInteractionLogProcessorPlugins(): array
     {
         return [];
     }

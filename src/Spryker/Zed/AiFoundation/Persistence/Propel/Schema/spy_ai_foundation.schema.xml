@@ -19,4 +19,35 @@
         </index>
     </table>
 
+    <table name="spy_ai_interaction_log" idMethod="native" allowPkInsert="true">
+        <column name="id_ai_interaction_log" required="true" type="INTEGER" primaryKey="true" autoIncrement="true" description="Primary key of the AI interaction log entry."/>
+        <column name="configuration_name" required="false" type="VARCHAR" size="255" description="Name of the AI configuration used for the interaction."/>
+        <column name="provider" required="false" type="VARCHAR" size="128" description="AI provider name (e.g. anthropic, openai)."/>
+        <column name="model" required="false" type="VARCHAR" size="128" description="AI model identifier used for the interaction."/>
+        <column name="prompt" required="false" type="LONGVARCHAR" description="The prompt message sent to the AI model."/>
+        <column name="response" required="false" type="LONGVARCHAR" description="The response message returned by the AI model."/>
+        <column name="input_tokens" required="false" type="INTEGER" description="Number of input tokens consumed by the request."/>
+        <column name="output_tokens" required="false" type="INTEGER" description="Number of output tokens generated in the response."/>
+        <column name="conversation_reference" required="false" type="VARCHAR" size="255" description="Optional conversation identifier linking this log to a conversation thread."/>
+        <column name="inference_time_ms" required="false" type="INTEGER" description="Total wall-clock time in milliseconds for the full prompt execution."/>
+        <column name="is_successful" required="true" default="false" type="BOOLEAN" description="Indicates whether the AI interaction completed successfully."/>
+        <column name="metadata" required="false" type="LONGVARCHAR" description="JSON: tool invocations, errors, schema class."/>
+
+        <behavior name="timestampable">
+            <parameter name="disable_updated_at" value="true"/>
+        </behavior>
+
+        <id-method-parameter value="spy_ai_interaction_log_pk_seq"/>
+
+        <index name="spy_ai_interaction_log-conversation_reference">
+            <index-column name="conversation_reference"/>
+        </index>
+        <index name="spy_ai_interaction_log-configuration_name">
+            <index-column name="configuration_name"/>
+        </index>
+        <index name="spy_ai_interaction_log-is_successful">
+            <index-column name="is_successful"/>
+        </index>
+    </table>
+
 </database>

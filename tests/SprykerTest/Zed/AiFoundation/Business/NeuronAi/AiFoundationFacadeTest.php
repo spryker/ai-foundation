@@ -699,6 +699,7 @@ class AiFoundationFacadeTest extends Unit
             chatHistoryResolver: $this->createMockChatHistoryResolver(),
             aiConfigurations: $config->getAiConfigurations(),
             aiToolSetPlugins: [],
+            postPromptPlugins: [],
         );
 
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);
@@ -734,6 +735,7 @@ class AiFoundationFacadeTest extends Unit
             chatHistoryResolver: $this->createMockChatHistoryResolver(),
             aiConfigurations: $config->getAiConfigurations(),
             aiToolSetPlugins: [],
+            postPromptPlugins: [],
         );
 
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);

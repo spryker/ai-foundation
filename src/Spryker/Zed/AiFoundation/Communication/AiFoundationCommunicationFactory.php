@@ -5,13 +5,27 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation\Communication;
 
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
+use Spryker\Zed\AiFoundation\Communication\Log\AiInteractionDbHandler;
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 
+/**
+ * @method \Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface getFacade()
+ * @method \Spryker\Zed\AiFoundation\AiFoundationConfig getConfig()
+ */
 class AiFoundationCommunicationFactory extends AbstractCommunicationFactory
 {
+    public function createAiInteractionDbHandler(): AiInteractionDbHandler
+    {
+        return new AiInteractionDbHandler(
+            aiFoundationFacade: $this->getFacade(),
+        );
+    }
+
     /**
      * @return array<\Spryker\Zed\StateMachine\Dependency\Plugin\CommandPluginInterface>
      */
@@ -26,5 +40,21 @@ class AiFoundationCommunicationFactory extends AbstractCommunicationFactory
     public function getAiWorkflowConditionPlugins(): array
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_WORKFLOW_CONDITION);
+    }
+
+    /**
+     * @return list<\Spryker\Shared\Log\Dependency\Plugin\LogHandlerPluginInterface>
+     */
+    public function getAiInteractionLogHandlerPlugins(): array
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_INTERACTION_LOG_HANDLER);
+    }
+
+    /**
+     * @return list<\Spryker\Shared\Log\Dependency\Plugin\LogProcessorPluginInterface>
+     */
+    public function getAiInteractionLogProcessorPlugins(): array
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_INTERACTION_LOG_PROCESSOR);
     }
 }

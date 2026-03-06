@@ -330,6 +330,7 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
             chatHistoryResolver: $this->tester->getFactory()->createNeuronAiChatHistoryResolver(),
             aiConfigurations: $config->getAiConfigurations(),
             aiToolSetPlugins: [],
+            postPromptPlugins: [],
         );
 
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);
@@ -498,6 +499,7 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
             chatHistoryResolver: $this->tester->getFactory()->createNeuronAiChatHistoryResolver(),
             aiConfigurations: $config->getAiConfigurations(),
             aiToolSetPlugins: $this->convertToolsToToolSets($tools),
+            postPromptPlugins: [],
         );
 
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);

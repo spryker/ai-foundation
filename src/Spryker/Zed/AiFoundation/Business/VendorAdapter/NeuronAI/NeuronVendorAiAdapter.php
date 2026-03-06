@@ -5,6 +5,8 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI;
 
 use ArrayObject;
@@ -66,9 +68,12 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
      */
     protected const string AI_CONVERSATION_HISTORY_CONFIG = 'conversation_history';
 
+    protected const string AI_PROVIDER_CONFIG_MODEL = 'model';
+
     /**
      * @param array<string, array<string, mixed>> $aiConfigurations
      * @param array<\Spryker\Zed\AiFoundation\Dependency\Tools\ToolSetPluginInterface> $aiToolSetPlugins
+     * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface> $postPromptPlugins
      */
     public function __construct(
         protected ProviderResolverInterface $providerResolver,
@@ -76,7 +81,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         protected NeuronAiToolMapperInterface $toolMapper,
         protected ChatHistoryResolverInterface $chatHistoryResolver,
         protected array $aiConfigurations,
-        protected array $aiToolSetPlugins = [],
+        protected array $aiToolSetPlugins,
+        protected array $postPromptPlugins,
     ) {
     }
 
@@ -104,11 +110,24 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
 
         $structuredSchema = $promptRequest->getStructuredMessage();
 
-        if ($structuredSchema instanceof AbstractTransfer) {
-            return $this->executeStructuredPrompt($provider, $message, $structuredSchema, $maxRetries, $chatHistory);
+        $providerName = $resolvedAiConfiguration[static::AI_PROVIDER_NAME];
+        $modelName = $resolvedAiConfiguration[static::AI_PROVIDER_CONFIG][static::AI_PROVIDER_CONFIG_MODEL] ?? null;
+        $startTime = microtime(true);
+
+        $promptResponseTransfer = $structuredSchema instanceof AbstractTransfer
+            ? $this->executeStructuredPrompt($provider, $message, $structuredSchema, $maxRetries, $chatHistory)
+            : $this->executePlainPrompt($provider, $message, $maxRetries, $chatHistory);
+
+        $promptResponseTransfer = $promptResponseTransfer
+            ->setProvider($providerName)
+            ->setModel($modelName)
+            ->setInferenceTimeMs((int)round((microtime(true) - $startTime) * 1000));
+
+        foreach ($this->postPromptPlugins as $postPromptPlugin) {
+            $postPromptPlugin->postPrompt($promptRequest, $promptResponseTransfer);
         }
 
-        return $this->executePlainPrompt($provider, $message, $maxRetries, $chatHistory);
+        return $promptResponseTransfer;
     }
 
     /**
@@ -208,6 +227,9 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                 $structuredTransfer = $this->messageMapper->mapProviderStructuredResponseToTransfer($response, $structuredSchema);
 
                 $promptResponseTransfer->setStructuredMessage($structuredTransfer);
+                $promptResponseTransfer->setMessage(
+                    $this->messageMapper->mapProviderResponseToPromptResponse($response)->getMessage(),
+                );
                 $promptResponseTransfer->setIsSuccessful(true);
 
                 if ($chatHistory !== null) {

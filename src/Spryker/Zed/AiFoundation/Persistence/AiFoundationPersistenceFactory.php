@@ -5,10 +5,15 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace Spryker\Zed\AiFoundation\Persistence;
 
 use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery;
+use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLogQuery;
 use Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItemQuery;
+use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiInteractionLogMapper;
+use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiInteractionLogMapperInterface;
 use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapper;
 use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\AiWorkflowItemMapperInterface;
 use Spryker\Zed\AiFoundation\Persistence\Propel\Mapper\ConversationHistoryMapper;
@@ -51,5 +56,15 @@ class AiFoundationPersistenceFactory extends AbstractPersistenceFactory
     public function createAiWorkflowItemQuery(): SpyAiWorkflowItemQuery
     {
         return SpyAiWorkflowItemQuery::create();
+    }
+
+    public function createAiInteractionLogMapper(): AiInteractionLogMapperInterface
+    {
+        return new AiInteractionLogMapper();
+    }
+
+    public function createAiInteractionLogQuery(): SpyAiInteractionLogQuery
+    {
+        return SpyAiInteractionLogQuery::create();
     }
 }
