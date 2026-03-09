@@ -7,6 +7,8 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
@@ -48,6 +50,19 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
             ->getVendorAdapterPlugin()
             ->getVendorAdapter()
             ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createAiInteractionLogCollection(
+        AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
+    ): AiInteractionLogCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createAiInteractionLogCreator()
+            ->createAiInteractionLogCollection($aiInteractionLogCollectionRequestTransfer);
     }
 
     /**

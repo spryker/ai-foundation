@@ -15,6 +15,9 @@
         <property name="isSuccessful" type="bool" description="Indicates whether the prompt request was successful."/>
         <property name="errors" type="Error[]" singular="error" description="List of errors encountered during the prompt request, if any."/>
         <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="List of tool invocations executed by the LLM during prompt processing."/>
+        <property name="provider" type="string" description="Resolved AI provider name from configuration."/>
+        <property name="model" type="string" description="Resolved AI model name from provider configuration."/>
+        <property name="inferenceTimeMs" type="int" description="Total wall-clock time in milliseconds for the full prompt() execution."/>
     </transfer>
 
     <transfer name="PromptMessage" strict="true">
@@ -107,5 +110,52 @@
     <transfer name="StateMachineItemState">
         <property name="idStateMachineItemState" type="string"/>
         <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="AiInteractionLog" strict="true">
+        <property name="idAiInteractionLog" type="int" description="Primary key of the AI interaction log entry."/>
+        <property name="configurationName" type="string" description="Name of the AI configuration used for the interaction."/>
+        <property name="provider" type="string" description="AI provider name (e.g. anthropic, openai)."/>
+        <property name="model" type="string" description="AI model identifier used for the interaction."/>
+        <property name="prompt" type="string" description="The prompt message sent to the AI model."/>
+        <property name="response" type="string" description="The response message returned by the AI model."/>
+        <property name="inputTokens" type="int" description="Number of input tokens consumed by the request."/>
+        <property name="outputTokens" type="int" description="Number of output tokens generated in the response."/>
+        <property name="conversationReference" type="string" description="Optional conversation identifier linking this log to a conversation thread."/>
+        <property name="inferenceTimeMs" type="int" description="Total wall-clock time in milliseconds for the full prompt execution."/>
+        <property name="isSuccessful" type="bool" description="Indicates whether the AI interaction completed successfully."/>
+        <property name="metadata" type="string" description="JSON-encoded metadata (tool invocations, errors, schema class)."/>
+        <property name="createdAt" type="string" description="Timestamp of when the interaction log was created."/>
+    </transfer>
+
+    <transfer name="AiInteractionLogCollection" strict="true">
+        <property name="aiInteractionLogs" type="AiInteractionLog[]" singular="aiInteractionLog"/>
+    </transfer>
+
+    <transfer name="AiInteractionLogCollectionRequest" strict="true">
+        <property name="aiInteractionLogCollection" type="AiInteractionLogCollection"/>
+    </transfer>
+
+    <transfer name="AiInteractionLogCollectionResponse" strict="true">
+        <property name="aiInteractionLogCollection" type="AiInteractionLogCollection"/>
+        <property name="errors" type="Error[]" singular="error"/>
+        <property name="isSuccessful" type="bool"/>
+    </transfer>
+
+    <transfer name="AiInteractionLogCriteria" strict="true">
+        <property name="aiInteractionLogConditions" type="AiInteractionLogConditions"/>
+    </transfer>
+
+    <transfer name="AiInteractionLogConditions" strict="true">
+        <property name="aiInteractionLogIds" type="int[]" singular="aiInteractionLogId"/>
+        <property name="conversationReferences" type="string[]" singular="conversationReference"/>
+        <property name="configurationNames" type="string[]" singular="configurationName"/>
+        <property name="isSuccessful" type="bool"/>
+        <property name="createdAtFrom" type="string"/>
+        <property name="createdAtTo" type="string"/>
+    </transfer>
+
+    <transfer name="AuditLoggerConfigCriteria" strict="true">
+        <property name="channelName" type="string"/>
     </transfer>
 </transfers>

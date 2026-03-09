@@ -286,4 +286,20 @@ interface AiFoundationConstants
      * @var string
      */
     public const AI_WORKFLOW_STATE_MACHINE_NAME = 'AiWorkflow';
+
+    /**
+     * Specification:
+     * - Defines the audit logger channel name for AI interaction logging.
+     *
+     * @api
+     */
+    public const string AUDIT_LOGGER_CHANNEL_NAME_AI_INTERACTION = 'ai_foundation:ai_interaction';
+
+    /**
+     * Specification:
+     * - Defines the audit log context key that holds the prepared AiInteractionLogTransfer for persistence.
+     *
+     * @api
+     */
+    public const string AUDIT_LOG_CONTEXT_KEY_TRANSFER = 'ai_interaction_log';
 }
