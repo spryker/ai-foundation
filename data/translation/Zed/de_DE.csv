@@ -1,0 +1,20 @@
+Intelligence,Intelligenz
+Workflows,Workflows
+"Workflow Items",Workflow-Einträge
+"Workflow Detail",Workflow-Detail
+"Back to List","Zurück zur Liste"
+"Current State","Aktueller Status"
+ID,ID
+"Process Name",Prozessname
+State,Status
+"Not started","Nicht gestartet"
+"Manual Events","Manuelle Ereignisse"
+"Context Data",Kontextdaten
+"State History",Statusverlauf
+"State Name",Statusname
+"Entered At","Eingetreten am"
+"Process Graph",Prozessgraph
+"AI workflow item with ID %d not found.","KI-Workflow-Eintrag mit ID %d nicht gefunden."
+"Invalid request.","Ungültige Anfrage."
+"Event ""%s"" triggered successfully.","Ereignis ""%s"" erfolgreich ausgelöst."
+"No manual events available for the current state.","Für den aktuellen Status sind keine manuellen Ereignisse verfügbar."

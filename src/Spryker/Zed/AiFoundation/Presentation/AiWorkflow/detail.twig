@@ -1,0 +1,96 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% block section_title %}{{ 'Workflow Detail' | trans }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton(url('/ai-foundation/ai-workflow'), 'Back to List' | trans) }}
+{% endblock %}
+
+{% block content %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Current State' | trans } %}
+        {% block widget_content %}
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>{{ 'ID' | trans }}</th>
+                        <td>{{ aiWorkflowItem.idAiWorkflowItem }}</td>
+                    </tr>
+                    <tr>
+                        <th>{{ 'Process Name' | trans }}</th>
+                        <td>{{ stateMachineItem ? stateMachineItem.processName | e : 'Not started' | trans }}</td>
+                    </tr>
+                    <tr>
+                        <th>{{ 'State' | trans }}</th>
+                        <td>{{ stateMachineItem ? stateMachineItem.stateName | e : 'Not started' | trans }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Context Data' | trans } %}
+        {% block widget_content %}
+            <pre>{{ aiWorkflowItem.contextData | json_encode(constant('JSON_PRETTY_PRINT')) | e }}</pre>
+        {% endblock %}
+    {% endembed %}
+
+    {% if stateHistory is not empty %}
+        {% embed '@Gui/Partials/widget.twig' with { widget_title: 'State History' | trans } %}
+            {% block widget_content %}
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ 'State Name' | trans }}</th>
+                            <th>{{ 'Entered At' | trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for historyItem in stateHistory %}
+                            <tr>
+                                <td>{{ historyItem.stateName | e }}</td>
+                                <td>{{ historyItem.createdAt ? historyItem.createdAt | date('Y-m-d H:i:s') : '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+    {% if stateMachineItem %}
+        {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Manual Events' | trans } %}
+            {% block widget_content %}
+                {% if manualEvents is empty %}
+                    <p class="text-muted">{{ 'No manual events available for the current state.' | trans }}</p>
+                {% else %}
+                    <div class="btn-group btn-group-sm">
+                        {% for eventName in manualEvents %}
+                            <form method="POST"
+                                  action="{{ url('/ai-foundation/ai-workflow/trigger-manual-event') }}">
+                                <input type="hidden" name="identifier" value="{{ aiWorkflowItem.idAiWorkflowItem | e('html_attr') }}" />
+                                <input type="hidden" name="idItemState" value="{{ stateMachineItem.idItemState }}" />
+                                <input type="hidden" name="eventName" value="{{ eventName | e('html_attr') }}" />
+                                <input type="hidden" name="_token" value="{{ csrf_token('AiWorkflowManualEventTrigger') }}" />
+                                <button type="submit" class="btn btn-primary">{{ eventName | title | e }}</button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+    {% if stateMachineItem %}
+        {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Process Graph' | trans } %}
+            {% block widget_content %}
+                <img src="{{ url('/state-machine/graph/draw', {
+                    process: stateMachineItem.processName,
+                    'state-machine': stateMachineItem.stateMachineName,
+                    'highlight-state': stateMachineItem.stateName
+                }) }}" alt="{{ 'Process Graph' | trans }}" class="img-responsive" />
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+{% endblock %}

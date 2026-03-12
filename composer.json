@@ -7,12 +7,15 @@
         "aws/aws-sdk-php": "^3.209",
         "neuron-core/neuron-ai": "^2.9.3",
         "php": ">=8.3",
+        "spryker/gui": "^4.0.0",
         "spryker/kernel": "^3.30.0",
         "spryker/log-extension": "^1.0.0",
         "spryker/monolog": "^2.0.5",
         "spryker/propel-orm": "^1.15.0",
         "spryker/state-machine": "^2.0.0",
+        "spryker/symfony": "^3.0.0",
         "spryker/transfer": "^3.27.0",
+        "spryker/util-text": "^1.0.0",
         "spryker/zed-request": "^3.20.0"
     },
     "require-dev": {

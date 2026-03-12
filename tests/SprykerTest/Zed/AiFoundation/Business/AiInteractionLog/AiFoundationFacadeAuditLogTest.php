@@ -203,7 +203,7 @@ class AiFoundationFacadeAuditLogTest extends Unit
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);
         $mockVendorProviderPlugin->method('getVendorAdapter')->willReturn($neuronAiAdapter);
 
-        $this->tester->setDependency(AiFoundationDependencyProvider::VENDOR_PROVIDER_PLUGIN, $mockVendorProviderPlugin);
+        $this->tester->setDependency(AiFoundationDependencyProvider::PLUGIN_VENDOR_PROVIDER, $mockVendorProviderPlugin);
 
         return $this->tester->getFacade();
     }

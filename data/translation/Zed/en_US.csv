@@ -1,0 +1,20 @@
+Intelligence,Intelligence
+Workflows,Workflows
+"Workflow Items","Workflow Items"
+"Workflow Detail","Workflow Detail"
+"Back to List","Back to List"
+"Current State","Current State"
+ID,ID
+"Process Name","Process Name"
+State,State
+"Not started","Not started"
+"Manual Events","Manual Events"
+"Context Data","Context Data"
+"State History","State History"
+"State Name","State Name"
+"Entered At","Entered At"
+"Process Graph","Process Graph"
+"AI workflow item with ID %d not found.","AI workflow item with ID %d not found."
+"Invalid request.","Invalid request."
+"Event ""%s"" triggered successfully.","Event ""%s"" triggered successfully."
+"No manual events available for the current state.","No manual events available for the current state."

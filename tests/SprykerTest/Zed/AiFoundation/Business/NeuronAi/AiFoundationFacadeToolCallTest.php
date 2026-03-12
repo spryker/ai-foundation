@@ -331,7 +331,7 @@ class AiFoundationFacadeToolCallTest extends Unit
         $mockVendorProviderPlugin->method('getVendorAdapter')->willReturn($neuronAiAdapter);
 
         $this->tester->setDependency(
-            AiFoundationDependencyProvider::VENDOR_PROVIDER_PLUGIN,
+            AiFoundationDependencyProvider::PLUGIN_VENDOR_PROVIDER,
             $mockVendorProviderPlugin,
         );
 

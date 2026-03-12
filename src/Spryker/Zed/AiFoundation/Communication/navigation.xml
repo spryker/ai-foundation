@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<config>
+    <ai-foundation>
+        <label>Intelligence</label>
+        <title>Intelligence</title>
+        <icon>network_intel_node</icon>
+        <pages>
+            <ai-workflow>
+                <label>Workflows</label>
+                <title>Workflows</title>
+                <bundle>ai-foundation</bundle>
+                <controller>ai-workflow</controller>
+                <action>index</action>
+                <pages>
+                    <ai-workflow-detail>
+                        <label>Workflow Detail</label>
+                        <title>Workflow Detail</title>
+                        <bundle>ai-foundation</bundle>
+                        <controller>ai-workflow</controller>
+                        <action>detail</action>
+                        <visible>0</visible>
+                    </ai-workflow-detail>
+                    <ai-workflow-trigger>
+                        <label>Trigger Event</label>
+                        <title>Trigger Event</title>
+                        <bundle>ai-foundation</bundle>
+                        <controller>ai-workflow</controller>
+                        <action>trigger-manual-event</action>
+                        <visible>0</visible>
+                    </ai-workflow-trigger>
+                </pages>
+            </ai-workflow>
+        </pages>
+    </ai-foundation>
+</config>

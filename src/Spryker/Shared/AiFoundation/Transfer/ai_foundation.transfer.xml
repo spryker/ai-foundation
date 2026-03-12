@@ -105,6 +105,7 @@
     <transfer name="StateMachineItem">
         <property name="identifier" type="int"/>
         <property name="idItemState" type="int"/>
+        <property name="idStateMachineProcess" type="int"/>
     </transfer>
 
     <transfer name="StateMachineItemState">

@@ -13,16 +13,25 @@ use Spryker\Zed\AiFoundation\Communication\Plugin\AiFoundation\NeuronAiVendorPro
 use Spryker\Zed\AiFoundation\Dependency\VendorAdapter\VendorProviderPluginInterface;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
+use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 {
-    public const string VENDOR_PROVIDER_PLUGIN = 'VENDOR_PROVIDER_PLUGIN';
+    public const string PLUGIN_VENDOR_PROVIDER = 'PLUGIN_VENDOR_PROVIDER';
 
     public const string PLUGINS_AI_TOOL_SET = 'PLUGINS_AI_TOOL_SET';
 
     public const string PLUGINS_AI_WORKFLOW_COMMAND = 'PLUGINS_AI_WORKFLOW_COMMAND';
 
     public const string PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
+
+    public const string FACADE_STATE_MACHINE = 'FACADE_STATE_MACHINE';
+
+    /**
+     * @uses \Spryker\Zed\Form\Communication\Plugin\Application\FormApplicationPlugin::SERVICE_FORM_CSRF_PROVIDER
+     */
+    public const string SERVICE_FORM_CSRF_PROVIDER = 'form.csrf_provider';
 
     public const string PLUGINS_POST_PROMPT = 'PLUGINS_POST_PROMPT';
 
@@ -35,14 +44,29 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = parent::provideBusinessLayerDependencies($container);
         $container = $this->addVendorAdapterPlugin($container);
         $container = $this->addAiToolSetPlugins($container);
+        $container = $this->addStateMachineFacade($container);
         $container = $this->addPostPromptPlugins($container);
+
+        return $container;
+    }
+
+    public function provideCommunicationLayerDependencies(Container $container): Container
+    {
+        $container = parent::provideCommunicationLayerDependencies($container);
+
+        $container = $this->addAiWorkflowCommandPlugins($container);
+        $container = $this->addAiWorkflowConditionPlugins($container);
+        $container = $this->addAiInteractionLogHandlerPlugins($container);
+        $container = $this->addAiInteractionLogProcessorPlugins($container);
+        $container = $this->addCsrfProviderService($container);
+        $container = $this->addStateMachineFacade($container);
 
         return $container;
     }
 
     protected function addVendorAdapterPlugin(Container $container): Container
     {
-        $container->set(static::VENDOR_PROVIDER_PLUGIN, function (): VendorProviderPluginInterface {
+        $container->set(static::PLUGIN_VENDOR_PROVIDER, function (): VendorProviderPluginInterface {
             return $this->getVendorAdapterPlugin();
         });
 
@@ -71,14 +95,20 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         return [];
     }
 
-    public function provideCommunicationLayerDependencies(Container $container): Container
+    protected function addStateMachineFacade(Container $container): Container
     {
-        $container = parent::provideCommunicationLayerDependencies($container);
+        $container->set(static::FACADE_STATE_MACHINE, function (Container $container): StateMachineFacadeInterface {
+            return $container->getLocator()->stateMachine()->facade();
+        });
 
-        $container = $this->addAiWorkflowCommandPlugins($container);
-        $container = $this->addAiWorkflowConditionPlugins($container);
-        $container = $this->addAiInteractionLogHandlerPlugins($container);
-        $container = $this->addAiInteractionLogProcessorPlugins($container);
+        return $container;
+    }
+
+    protected function addCsrfProviderService(Container $container): Container
+    {
+        $container->set(static::SERVICE_FORM_CSRF_PROVIDER, function (Container $container): CsrfTokenManagerInterface {
+            return $container->getApplicationService(static::SERVICE_FORM_CSRF_PROVIDER);
+        });
 
         return $container;
     }

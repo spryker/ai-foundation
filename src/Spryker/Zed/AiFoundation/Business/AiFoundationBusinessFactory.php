@@ -37,6 +37,7 @@ use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver\Pr
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\VendorAdapterInterface;
 use Spryker\Zed\AiFoundation\Dependency\VendorAdapter\VendorProviderPluginInterface;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
+use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
 
 /**
  * @method \Spryker\Zed\AiFoundation\AiFoundationConfig getConfig()
@@ -47,7 +48,7 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
 {
     public function getVendorAdapterPlugin(): VendorProviderPluginInterface
     {
-        return $this->getProvidedDependency(AiFoundationDependencyProvider::VENDOR_PROVIDER_PLUGIN);
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGIN_VENDOR_PROVIDER);
     }
 
     // NeuronAi related methods start
@@ -167,6 +168,11 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
             repository: $this->getRepository(),
             entityManager: $this->getEntityManager(),
         );
+    }
+
+    public function getStateMachineFacade(): StateMachineFacadeInterface
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::FACADE_STATE_MACHINE);
     }
 
     // AI Workflow methods finish
