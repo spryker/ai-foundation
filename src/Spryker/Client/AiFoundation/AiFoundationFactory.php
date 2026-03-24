@@ -7,6 +7,8 @@
 
 namespace Spryker\Client\AiFoundation;
 
+use Spryker\Client\AiFoundation\Prompt\PromptSender;
+use Spryker\Client\AiFoundation\Prompt\PromptSenderInterface;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStub;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
 use Spryker\Client\Kernel\AbstractFactory;
@@ -17,6 +19,11 @@ use Spryker\Client\ZedRequest\ZedRequestClientInterface;
  */
 class AiFoundationFactory extends AbstractFactory
 {
+    public function createPromptSender(): PromptSenderInterface
+    {
+        return new PromptSender($this->createZedAiFoundationStub());
+    }
+
     public function createZedAiFoundationStub(): AiFoundationStubInterface
     {
         return new AiFoundationStub($this->getZedRequestClient());

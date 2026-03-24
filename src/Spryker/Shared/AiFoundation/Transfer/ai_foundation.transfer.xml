@@ -3,6 +3,11 @@
     <transfer name="PromptRequest" strict="true">
         <property name="promptMessage" type="PromptMessage"/>
         <property name="structuredMessage" type="object" description="Transfer object that defines the schema for structured response from the LLM."/>
+        <property
+            name="structuredMessageClass"
+            type="string"
+            description="[Meta] Fully qualified class name of the structured message transfer. Internal meta field used for Zed RPC serialization — do not set or read this field directly."
+        />
         <property name="aiConfigurationName" type="string" description="The configuration name of ai configuration"/>
         <property name="maxRetries" type="int" description="Maximum number of retry attempts for the request in case of failures. Defaults to 1."/>
         <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names."/>

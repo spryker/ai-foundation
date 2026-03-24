@@ -15,6 +15,9 @@ use Spryker\Client\ZedRequest\Stub\ZedRequestStub;
 
 class AiFoundationStub extends ZedRequestStub implements AiFoundationStubInterface
 {
+    /**
+     * @uses \Spryker\Zed\AiFoundation\Communication\Controller\GatewayController::promptAction
+     */
     public function prompt(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer
     {
         /** @var \Generated\Shared\Transfer\PromptResponseTransfer $promptResponseTransfer */

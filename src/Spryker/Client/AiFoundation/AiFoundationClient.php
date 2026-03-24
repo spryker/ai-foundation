@@ -30,8 +30,8 @@ class AiFoundationClient extends AbstractClient implements AiFoundationClientInt
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer
     {
         return $this->getFactory()
-            ->createZedAiFoundationStub()
-            ->prompt($promptRequest);
+            ->createPromptSender()
+            ->sendPrompt($promptRequest);
     }
 
     /**

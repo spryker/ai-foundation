@@ -20,6 +20,11 @@ class GatewayController extends AbstractGatewayController
 {
     public function promptAction(PromptRequestTransfer $promptRequestTransfer): PromptResponseTransfer
     {
+        $transferClassString = $promptRequestTransfer->getStructuredMessageClass();
+        if ($transferClassString !== null) {
+            $promptRequestTransfer->setStructuredMessage(new $transferClassString());
+        }
+
         return $this->getFacade()->prompt($promptRequestTransfer);
     }
 
