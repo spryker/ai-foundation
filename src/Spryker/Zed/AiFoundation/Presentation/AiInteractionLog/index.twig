@@ -1,0 +1,20 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% block section_title %}{{ 'Audit Logs' | trans }}{% endblock %}
+
+{% block content %}
+    {% include '@AiFoundation/Partials/ai-interaction-log-stats-cards.twig' %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'AI Interaction Logs' | trans } %}
+        {% block widget_content %}
+            {% include '@AiFoundation/Partials/ai-interaction-log-table-filter-form.twig' with { form: filterForm } %}
+            
+            <div class="cursor-pointer">
+                {{ aiInteractionLogTable | raw }}
+            </div>
+        {% endblock %}
+    {% endembed %}
+
+    {% include '@AiFoundation/Partials/ai-interaction-log-detail-drawer.twig' %}
+    <script src="{{ assetsPath('js/spryker-zed-ai-foundation-ai-interaction-log.js') }}"></script>
+{% endblock %}

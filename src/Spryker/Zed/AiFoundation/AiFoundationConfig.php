@@ -27,6 +27,8 @@ class AiFoundationConfig extends AbstractBundleConfig
 
     protected const DEFAULT_INITIAL_STATE = 'new';
 
+    protected const int DEFAULT_AI_INTERACTION_LOG_DATE_RANGE_DAYS = 7;
+
     /**
      * @api
      *
@@ -63,6 +65,14 @@ class AiFoundationConfig extends AbstractBundleConfig
     public function getAiWorkflowStateMachineName(): string
     {
         return AiFoundationConstants::AI_WORKFLOW_STATE_MACHINE_NAME;
+    }
+
+    /**
+     * @api
+     */
+    public function getAiInteractionLogDefaultDateRangeDays(): int
+    {
+        return static::DEFAULT_AI_INTERACTION_LOG_DATE_RANGE_DAYS;
     }
 
     /**

@@ -1,0 +1,115 @@
+{% import _self as macros %}
+
+{% macro renderDetailItem(label, value) %}
+    <div class="col-md-6">
+        <div class="card border-0 text-bg-light mb-2">
+            <div class="card-body p-2">
+                <h5 class="card-title mb-1">{{ label | trans }}</h5>
+                <p class="card-text">{{ value }}</p>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro renderCodeItem(label, value) %}
+    <div class="card border-0 mb-1">
+        <div class="card-body p-0">
+            <h5 class="card-title mb-1">{{ label | trans }}</h5>
+            <blockquote class="text-bg-light p-2 m-0">
+                {{ value }}
+            </blockquote>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro renderStatisticItem(label, value) %}
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body p-2 text-center">
+                <strong class="d-block fz-5">{{ label }}</strong>
+                <span>{{ value }}</span>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% if notFound is defined and notFound %}
+    <div class="alert alert-danger">{{ 'Log entry not found.' | trans }}</div>
+{% else %}
+    {% set inputTokens = log.inputTokens ?? 0 %}
+    {% set outputTokens = log.outputTokens ?? 0 %}
+    {% set totalTokens = inputTokens + outputTokens %}
+
+    <div class="mb-3">
+        <strong class="d-block mb-2">{{ 'Summary' | trans }}</strong>
+        <div class="row g-2">
+            {{ macros.renderDetailItem('Provider', log.provider ?? '-') }}
+            {{ macros.renderDetailItem('Model', log.model ?? '-') }}
+            {{ macros.renderDetailItem('Configuration', log.configurationName ?? '-') }}
+            {{ macros.renderDetailItem('Created At', log.createdAt ?? '-') }}
+            {{ macros.renderDetailItem('Status', log.isSuccessful ? 'Success' : 'Failed' | trans) }}
+            {{ macros.renderDetailItem('Inference Time', log.inferenceTimeMs ?? 0 ~ ' ms') }}
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <strong class="d-block mb-2">{{ 'Tokens' | trans }}</strong>
+        <div class="row g-2">
+            {{ macros.renderStatisticItem('Input', inputTokens) }}
+            {{ macros.renderStatisticItem('Output', outputTokens) }}
+            {{ macros.renderStatisticItem('Total', totalTokens) }}
+        </div>
+    </div>
+
+    <div class="card border-0">
+        <div class="card-body p-0">
+            <h5 class="card-title mb-1">{{ 'Conversation ID' | trans }}</h5>
+            <div class="text-bg-light p-2">
+                {% if log.conversationReference %}
+                    {{ log.conversationReference | e }}
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0">
+        <div class="card-body p-0">
+            <h5 class="card-title mb-1">{{ 'Prompt' | trans }}</h5>
+            <div class="text-bg-light p-2">
+                {% if log.prompt %}
+                    {{ log.prompt | e }}
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0">
+        <div class="card-body p-0">
+            <h5 class="card-title mb-1">{{ 'Response' | trans }}</h5>
+            <div class="text-bg-light p-2">
+                {% if log.response %}
+                    {{ log.response | e }}
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0">
+        <div class="card-body p-0">
+            <h5 class="card-title mb-1">{{ 'Metadata' | trans }}</h5>
+            <div class="text-bg-light p-2">
+                {% if log.metadata %}
+                    {{ log.metadata | e }}
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}

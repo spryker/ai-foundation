@@ -156,6 +156,14 @@
         <property name="createdAtTo" type="string"/>
     </transfer>
 
+    <transfer name="AiInteractionLogAggregation" strict="true">
+        <property name="totalRequests" type="int"/>
+        <property name="totalTokens" type="int"/>
+        <property name="successCount" type="int"/>
+        <property name="successRate" type="float"/>
+        <property name="averageInferenceTimeMs" type="float"/>
+    </transfer>
+
     <transfer name="AuditLoggerConfigCriteria" strict="true">
         <property name="channelName" type="string"/>
     </transfer>

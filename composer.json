@@ -7,7 +7,7 @@
         "aws/aws-sdk-php": "^3.209",
         "neuron-core/neuron-ai": "^2.9.3",
         "php": ">=8.3",
-        "spryker/gui": "^4.0.0",
+        "spryker/gui": "^5.0.1",
         "spryker/kernel": "^3.30.0",
         "spryker/log-extension": "^1.0.0",
         "spryker/monolog": "^2.0.5",

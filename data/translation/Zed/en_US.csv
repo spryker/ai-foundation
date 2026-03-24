@@ -18,3 +18,40 @@ State,State
 "Invalid request.","Invalid request."
 "Event ""%s"" triggered successfully.","Event ""%s"" triggered successfully."
 "No manual events available for the current state.","No manual events available for the current state."
+"Trigger Event","Trigger Event"
+"Audit Logs","Audit Logs"
+"AI Interaction Logs","AI Interaction Logs"
+"Interaction Detail","Interaction Detail"
+Close,Close
+Loading...,Loading...
+"Apply filters","Apply filters"
+"Reset filters","Reset filters"
+"Total Requests","Total Requests"
+"Total Tokens","Total Tokens"
+"Success Rate","Success Rate"
+"Avg Inference Time","Avg Inference Time"
+Summary,Summary
+Provider,Provider
+Model,Model
+Configuration,Configuration
+"Created At","Created At"
+Status,Status
+Success,Success
+Failed,Failed
+"Inference Time","Inference Time"
+Tokens,Tokens
+Input,Input
+Output,Output
+Total,Total
+Conversation,Conversation
+Prompt,Prompt
+Response,Response
+Metadata,Metadata
+"Inference (ms)","Inference (ms)"
+"All Configurations","All Configurations"
+"All Statuses","All Statuses"
+"Exact match...","Exact match..."
+"From Date","From Date"
+"To Date","To Date"
+"Log entry not found.","Log entry not found."
+"Failed to load information","Failed to load information"

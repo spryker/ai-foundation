@@ -18,3 +18,40 @@ State,Status
 "Invalid request.","Ungültige Anfrage."
 "Event ""%s"" triggered successfully.","Ereignis ""%s"" erfolgreich ausgelöst."
 "No manual events available for the current state.","Für den aktuellen Status sind keine manuellen Ereignisse verfügbar."
+"Trigger Event","Ereignis auslösen"
+"Audit Logs",Audit-Protokolle
+"AI Interaction Logs",KI-Interaktionsprotokolle
+"Interaction Detail",Interaktionsdetail
+Close,Schließen
+Loading...,Laden...
+"Apply filters","Filter anwenden"
+"Reset filters","Filter zurücksetzen"
+"Total Requests","Anfragen gesamt"
+"Total Tokens","Token gesamt"
+"Success Rate",Erfolgsrate
+"Avg Inference Time","Durchschnittliche Inferenzzeit"
+Summary,Zusammenfassung
+Provider,Anbieter
+Model,Modell
+Configuration,Konfiguration
+"Created At","Erstellt am"
+Status,Status
+Success,Erfolgreich
+Failed,Fehlgeschlagen
+"Inference Time",Inferenzzeit
+Tokens,Token
+Input,Eingabe
+Output,Ausgabe
+Total,Gesamt
+Conversation,Konversation
+Prompt,Prompt
+Response,Antwort
+Metadata,Metadaten
+"Inference (ms)","Inferenz (ms)"
+"All Configurations","Alle Konfigurationen"
+"All Statuses","Alle Status"
+"Exact match...","Exakte Übereinstimmung..."
+"From Date","Von Datum"
+"To Date","Bis Datum"
+"Log entry not found.","Protokolleintrag nicht gefunden."
+"Failed to load information","Informationen konnten nicht geladen werden"

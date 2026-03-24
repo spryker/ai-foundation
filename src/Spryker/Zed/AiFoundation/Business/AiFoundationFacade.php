@@ -7,8 +7,10 @@
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCriteriaTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
@@ -102,5 +104,31 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
         return $this->getFactory()
             ->createAiWorkflowItemReader()
             ->getAiWorkflowItemCollection($aiWorkflowItemCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getAiInteractionLogCollection(
+        AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
+    ): AiInteractionLogCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createAiInteractionLogReader()
+            ->getAiInteractionLogCollection($aiInteractionLogCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getAiInteractionLogAggregation(
+        AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
+    ): AiInteractionLogAggregationTransfer {
+        return $this->getFactory()
+            ->createAiInteractionLogReader()
+            ->getAiInteractionLogAggregation($aiInteractionLogCriteriaTransfer);
     }
 }

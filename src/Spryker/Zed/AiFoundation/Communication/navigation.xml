@@ -30,6 +30,39 @@
                     </ai-workflow-trigger>
                 </pages>
             </ai-workflow>
+            <ai-interaction-log>
+                <label>Audit Logs</label>
+                <title>Audit Logs</title>
+                <bundle>ai-foundation</bundle>
+                <controller>ai-interaction-log</controller>
+                <action>index</action>
+                <pages>
+                    <ai-interaction-log-table>
+                        <label>Table</label>
+                        <title>Table</title>
+                        <bundle>ai-foundation</bundle>
+                        <controller>ai-interaction-log</controller>
+                        <action>table</action>
+                        <visible>0</visible>
+                    </ai-interaction-log-table>
+                    <ai-interaction-log-stats>
+                        <label>Stats</label>
+                        <title>Stats</title>
+                        <bundle>ai-foundation</bundle>
+                        <controller>ai-interaction-log</controller>
+                        <action>stats</action>
+                        <visible>0</visible>
+                    </ai-interaction-log-stats>
+                    <ai-interaction-log-detail>
+                        <label>Detail</label>
+                        <title>Detail</title>
+                        <bundle>ai-foundation</bundle>
+                        <controller>ai-interaction-log</controller>
+                        <action>detail</action>
+                        <visible>0</visible>
+                    </ai-interaction-log-detail>
+                </pages>
+            </ai-interaction-log>
         </pages>
     </ai-foundation>
 </config>

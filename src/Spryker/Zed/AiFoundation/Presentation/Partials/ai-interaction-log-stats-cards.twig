@@ -1,0 +1,25 @@
+{% import _self as macros %}
+
+{% macro renderStatsCards(title, content) %}
+    <div class="card">
+        <div class="card-body text-center">
+            <h2 class="text-muted fs-6 m-0">{{ title | trans }}</h2>
+            <h3 class="fs-4">{{ content }}</h3>
+        </div>
+    </div>
+{% endmacro %}
+
+<div class="row g-2 mb-2" id="stats-cards">
+    <div class="col-sm-3">
+        {{ macros.renderStatsCards('Total Interactions', aggregation is defined ? aggregation.totalRequests | default(0) | number_format : '-') }}
+    </div>
+    <div class="col-sm-3">
+        {{ macros.renderStatsCards('Total Tokens', aggregation is defined ? aggregation.totalTokens | default(0) | number_format : '-') }}
+    </div>
+    <div class="col-sm-3">
+        {{ macros.renderStatsCards('Success Rate', aggregation is defined ? aggregation.successRate | default(0) | number_format(1) ~ '%' : '-') }}
+    </div>
+    <div class="col-sm-3">
+        {{ macros.renderStatsCards('Avg Inference Time', aggregation is defined ? aggregation.averageInferenceTimeMs | default(0) | number_format ~ ' ms' : '-') }}
+    </div>
+</div>

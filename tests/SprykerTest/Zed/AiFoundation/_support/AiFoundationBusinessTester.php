@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerTest\Zed\AiFoundation;
 
 use Codeception\Actor;
+use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 
 /**
  * Inherited Methods
@@ -31,6 +32,32 @@ use Codeception\Actor;
 class AiFoundationBusinessTester extends Actor
 {
     use _generated\AiFoundationBusinessTesterActions;
+
+    /**
+     * @param array<string, mixed> $override
+     */
+    public function haveAiInteractionLog(array $override = []): SpyAiInteractionLog
+    {
+        $defaults = [
+            'ConfigurationName' => sprintf('test_config_%s', uniqid()),
+            'provider' => 'test_provider',
+            'model' => 'test_model',
+            'prompt' => 'test prompt',
+            'response' => 'test response',
+            'input_tokens' => 100,
+            'output_tokens' => 50,
+            'inference_time_ms' => 500,
+            'is_successful' => true,
+            'conversation_reference' => sprintf('conv_%s', uniqid()),
+        ];
+
+        $data = array_merge($defaults, $override);
+        $entity = new SpyAiInteractionLog();
+        $entity->fromArray($data);
+        $entity->save();
+
+        return $entity;
+    }
 
     /**
      * Creates a test state machine process and state for AI Workflow testing.

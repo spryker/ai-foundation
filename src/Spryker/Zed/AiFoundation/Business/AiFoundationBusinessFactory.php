@@ -14,6 +14,8 @@ use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteract
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilderInterface;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreator;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreatorInterface;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Reader\AiInteractionLogReader;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Reader\AiInteractionLogReaderInterface;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreator;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Creator\AiWorkflowItemCreatorInterface;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Reader\AiWorkflowItemReader;
@@ -50,8 +52,6 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGIN_VENDOR_PROVIDER);
     }
-
-    // NeuronAi related methods start
 
     public function createNeuronAiVendorAdapter(): VendorAdapterInterface
     {
@@ -101,14 +101,10 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_TOOL_SET);
     }
 
-    // NeuronAi related methods finish
-
     public function createTransferToJsonSchemaMapper(): TransferJsonSchemaMapperInterface
     {
         return new TransferJsonSchemaMapper();
     }
-
-    // AI Interaction Log methods start
 
     public function createAiInteractionLogContextBuilder(): AiInteractionLogContextBuilderInterface
     {
@@ -122,6 +118,13 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
         );
     }
 
+    public function createAiInteractionLogReader(): AiInteractionLogReaderInterface
+    {
+        return new AiInteractionLogReader(
+            aiFoundationRepository: $this->getRepository(),
+        );
+    }
+
     /**
      * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface>
      */
@@ -129,10 +132,6 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_POST_PROMPT);
     }
-
-    // AI Interaction Log methods finish
-
-    // AI Workflow methods start
 
     public function createAiWorkflowItemCreator(): AiWorkflowItemCreatorInterface
     {
@@ -174,6 +173,4 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::FACADE_STATE_MACHINE);
     }
-
-    // AI Workflow methods finish
 }
