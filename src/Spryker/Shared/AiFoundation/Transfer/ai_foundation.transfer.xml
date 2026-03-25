@@ -19,7 +19,6 @@
         <property name="structuredMessage" type="object" description="Transfer object containing the structured response data returned by the LLM."/>
         <property name="isSuccessful" type="bool" description="Indicates whether the prompt request was successful."/>
         <property name="errors" type="Error[]" singular="error" description="List of errors encountered during the prompt request, if any."/>
-        <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="List of tool invocations executed by the LLM during prompt processing."/>
         <property name="provider" type="string" description="Resolved AI provider name from configuration."/>
         <property name="model" type="string" description="Resolved AI model name from provider configuration."/>
         <property name="inferenceTimeMs" type="int" description="Total wall-clock time in milliseconds for the full prompt() execution."/>
@@ -31,6 +30,7 @@
         <property name="contentData" type="array" singular="contentData"/>
         <property name="attachments" type="Attachment[]" singular="attachment"/>
         <property name="usage" type="Usage" description="Token usage for this message (input/output tokens)"/>
+        <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="Tool invocations associated with this message (for tool_call and tool_result types)"/>
     </transfer>
 
     <transfer name="Attachment" strict="true">
@@ -171,5 +171,13 @@
 
     <transfer name="AuditLoggerConfigCriteria" strict="true">
         <property name="channelName" type="string"/>
+    </transfer>
+
+    <transfer name="AiToolCall" strict="true">
+        <property name="toolName" type="string"/>
+        <property name="toolArguments" type="array" singular="toolArgument"/>
+        <property name="toolResult" type="string"/>
+        <property name="promptRequest" type="PromptRequest"/>
+        <property name="isExecutionAllowed" type="bool"/>
     </transfer>
 </transfers>

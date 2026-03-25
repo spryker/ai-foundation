@@ -35,6 +35,10 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
 
     public const string PLUGINS_POST_PROMPT = 'PLUGINS_POST_PROMPT';
 
+    public const string PLUGINS_PRE_TOOL_CALL = 'PLUGINS_PRE_TOOL_CALL';
+
+    public const string PLUGINS_POST_TOOL_CALL = 'PLUGINS_POST_TOOL_CALL';
+
     public const string PLUGINS_AI_INTERACTION_LOG_HANDLER = 'PLUGINS_AI_INTERACTION_LOG_HANDLER';
 
     public const string PLUGINS_AI_INTERACTION_LOG_PROCESSOR = 'PLUGINS_AI_INTERACTION_LOG_PROCESSOR';
@@ -46,6 +50,8 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = $this->addAiToolSetPlugins($container);
         $container = $this->addStateMachineFacade($container);
         $container = $this->addPostPromptPlugins($container);
+        $container = $this->addPreToolCallPlugins($container);
+        $container = $this->addPostToolCallPlugins($container);
 
         return $container;
     }
@@ -160,6 +166,40 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
      * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface>
      */
     protected function getPostPromptPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addPreToolCallPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_PRE_TOOL_CALL, function (Container $container): array {
+            return $this->getPreToolCallPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface>
+     */
+    protected function getPreToolCallPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addPostToolCallPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_POST_TOOL_CALL, function (Container $container): array {
+            return $this->getPostToolCallPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface>
+     */
+    protected function getPostToolCallPlugins(): array
     {
         return [];
     }

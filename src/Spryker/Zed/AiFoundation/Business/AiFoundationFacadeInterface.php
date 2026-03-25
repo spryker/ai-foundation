@@ -38,7 +38,6 @@ interface AiFoundationFacadeInterface
      * - Retries up to `PromptRequestTransfer.maxRetries` times if request fails (defaults to 1).
      * - Executes tool calls made by the AI provider during the conversation.
      * - Captures tool call information including tool name, arguments, and results.
-     * - Populates `PromptResponseTransfer.toolInvocations` with all tool invocations executed during the conversation.
      * - Continues the conversation with tool results until the AI provides a final response.
      * - If `PromptRequestTransfer.conversationReference` is provided, retrieves storage-backed conversation history and appends it to the prompt.
      * - Saves or updates the conversation history back to storage after the prompt is processed.

@@ -63,6 +63,8 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
             aiConfigurations: $this->getConfig()->getAiConfigurations(),
             aiToolSetPlugins: $this->getAiToolSetPlugins(),
             postPromptPlugins: $this->getPostPromptPlugins(),
+            preToolCallPlugins: $this->getPreToolCallPlugins(),
+            postToolCallPlugins: $this->getPostToolCallPlugins(),
         );
     }
 
@@ -100,6 +102,24 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_AI_TOOL_SET);
     }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface>
+     */
+    public function getPreToolCallPlugins(): array
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_PRE_TOOL_CALL);
+    }
+
+    /**
+     * @return array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface>
+     */
+    public function getPostToolCallPlugins(): array
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGINS_POST_TOOL_CALL);
+    }
+
+    // NeuronAi related methods finish
 
     public function createTransferToJsonSchemaMapper(): TransferJsonSchemaMapperInterface
     {

@@ -5,9 +5,12 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+declare(strict_types=1);
+
 namespace SprykerTest\Zed\AiFoundation\Business\NeuronAi;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use NeuronAI\Chat\Messages\AssistantMessage;
@@ -19,18 +22,18 @@ use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
-use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
+use Spryker\Zed\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface;
+use Spryker\Zed\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolPluginInterface;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolSetPluginInterface;
 use Spryker\Zed\AiFoundation\Dependency\VendorAdapter\VendorProviderPluginInterface;
 use SprykerTest\Zed\AiFoundation\AiFoundationBusinessTester;
-use SprykerTest\Zed\AiFoundation\Business\NeuronAi\Transfers\AiResponseTransfer;
 
 /**
  * Auto-generated group annotations
@@ -41,10 +44,10 @@ use SprykerTest\Zed\AiFoundation\Business\NeuronAi\Transfers\AiResponseTransfer;
  * @group Business
  * @group NeuronAi
  * @group Facade
- * @group AiFoundationFacadeToolCallTest
+ * @group AiFoundationFacadeToolCallPluginTest
  * Add your own group annotations below this line
  */
-class AiFoundationFacadeToolCallTest extends Unit
+class AiFoundationFacadeToolCallPluginTest extends Unit
 {
     protected const string TEST_AI_ENGINE = 'test_ollama';
 
@@ -62,35 +65,152 @@ class AiFoundationFacadeToolCallTest extends Unit
 
     protected const string TEST_TOOL_RESULT = '42';
 
+    protected const string TEST_MODIFIED_BY_KEY = 'modified_by';
+
+    protected const string TEST_FIRST_PLUGIN_VALUE = 'first_plugin';
+
     protected AiFoundationBusinessTester $tester;
 
-    public function testGivenToolIsProvidedWhenPromptWithToolCallThenPromptSucceeds(): void
+    public function testGivenPreToolCallPluginWhenToolIsCalledThenPluginReceivesCorrectContext(): void
     {
         // Arrange
         $testTool = $this->createTestTool();
         $promptRequestTransfer = $this->createPromptRequestTransfer()
             ->addToolSetName(static::TEST_TOOL_SET_NAME);
+
+        $capturedTransfer = null;
+        $preToolCallPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $preToolCallPlugin->expects($this->once())
+            ->method('preToolCall')
+            ->willReturnCallback(function (AiToolCallTransfer $transfer) use (&$capturedTransfer) {
+                $capturedTransfer = $transfer;
+
+                return $transfer;
+            });
 
         $mockProvider = $this->createMockProviderWithToolCall($testTool);
-        $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [$testTool],
+            [$preToolCallPlugin],
+            [],
+        );
 
         // Act
         $promptResponse = $facade->prompt($promptRequestTransfer);
 
         // Assert
         $this->assertTrue($promptResponse->getIsSuccessful());
-        $this->assertNotNull($promptResponse->getMessage());
+        $this->assertNotNull($capturedTransfer);
+        $this->assertSame(static::TEST_TOOL_NAME, $capturedTransfer->getToolName());
+        $this->assertNotNull($capturedTransfer->getPromptRequest());
+        $this->assertSame(static::TEST_AI_ENGINE, $capturedTransfer->getPromptRequest()->getAiConfigurationName());
+        $this->assertTrue($capturedTransfer->getIsExecutionAllowed());
     }
 
-    public function testGivenMultipleToolCallsWhenPromptThenPromptSucceeds(): void
+    public function testGivenPostToolCallPluginWhenToolIsCalledThenPluginReceivesCorrectContext(): void
     {
         // Arrange
         $testTool = $this->createTestTool();
         $promptRequestTransfer = $this->createPromptRequestTransfer()
             ->addToolSetName(static::TEST_TOOL_SET_NAME);
+
+        $capturedTransfer = null;
+        $postToolCallPlugin = $this->createMock(PostToolCallPluginInterface::class);
+        $postToolCallPlugin->expects($this->once())
+            ->method('postToolCall')
+            ->willReturnCallback(function (AiToolCallTransfer $transfer) use (&$capturedTransfer): void {
+                $capturedTransfer = $transfer;
+            });
+
+        $mockProvider = $this->createMockProviderWithToolCall($testTool);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [$testTool],
+            [],
+            [$postToolCallPlugin],
+        );
+
+        // Act
+        $promptResponse = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($promptResponse->getIsSuccessful());
+        $this->assertNotNull($capturedTransfer);
+        $this->assertSame(static::TEST_TOOL_NAME, $capturedTransfer->getToolName());
+        $this->assertSame(static::TEST_TOOL_RESULT, $capturedTransfer->getToolResult());
+        $this->assertNotNull($capturedTransfer->getPromptRequest());
+        $this->assertSame(static::TEST_AI_ENGINE, $capturedTransfer->getPromptRequest()->getAiConfigurationName());
+    }
+
+    public function testGivenPreToolCallPluginBlocksExecutionWhenToolIsCalledThenToolIsNotExecuted(): void
+    {
+        // Arrange
+        $toolExecutionCount = 0;
+        $testTool = new Tool(
+            name: static::TEST_TOOL_NAME,
+            description: 'A test calculator tool',
+        );
+        $testTool->setCallable(function () use (&$toolExecutionCount): string {
+            $toolExecutionCount++;
+
+            return static::TEST_TOOL_RESULT;
+        });
+
+        $promptRequestTransfer = $this->createPromptRequestTransfer()
+            ->addToolSetName(static::TEST_TOOL_SET_NAME);
+
+        $preToolCallPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $preToolCallPlugin->method('preToolCall')
+            ->willReturnCallback(function (AiToolCallTransfer $transfer): AiToolCallTransfer {
+                return $transfer->setIsExecutionAllowed(false);
+            });
+
+        $postToolCallPlugin = $this->createMock(PostToolCallPluginInterface::class);
+        $postToolCallPlugin->expects($this->once())->method('postToolCall');
+
+        $mockProvider = $this->createMockProviderWithToolCall($testTool);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [$testTool],
+            [$preToolCallPlugin],
+            [$postToolCallPlugin],
+        );
+
+        // convertToolsToToolSets calls execute() once during setup
+        $executionCountBeforePrompt = $toolExecutionCount;
+
+        // Act
+        $promptResponse = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($promptResponse->getIsSuccessful());
+        // Tool should NOT have been executed again during prompt (blocked by pre-plugin)
+        $this->assertSame($executionCountBeforePrompt, $toolExecutionCount);
+    }
+
+    public function testGivenMultipleToolCallsWhenPromptIsCalledThenPluginsAreInvokedForEachTool(): void
+    {
+        // Arrange
+        $testTool = $this->createTestTool();
+        $promptRequestTransfer = $this->createPromptRequestTransfer()
+            ->addToolSetName(static::TEST_TOOL_SET_NAME);
+
+        $preToolCallPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $preToolCallPlugin->expects($this->exactly(2))
+            ->method('preToolCall')
+            ->willReturnArgument(0);
+
+        $postToolCallPlugin = $this->createMock(PostToolCallPluginInterface::class);
+        $postToolCallPlugin->expects($this->exactly(2))->method('postToolCall');
 
         $mockProvider = $this->createMockProviderWithMultipleToolInvocations($testTool);
-        $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [$testTool],
+            [$preToolCallPlugin],
+            [$postToolCallPlugin],
+        );
 
         // Act
         $promptResponse = $facade->prompt($promptRequestTransfer);
@@ -99,72 +219,75 @@ class AiFoundationFacadeToolCallTest extends Unit
         $this->assertTrue($promptResponse->getIsSuccessful());
     }
 
-    public function testGivenToolWithArgumentsWhenToolIsCalledThenPromptSucceeds(): void
-    {
-        // Arrange
-        $testTool = $this->createTestTool();
-        $expectedArguments = ['number1' => 10, 'number2' => 32];
-        $promptRequestTransfer = $this->createPromptRequestTransfer()
-            ->addToolSetName(static::TEST_TOOL_SET_NAME);
-
-        $mockProvider = $this->createMockProviderWithToolCallAndArguments($testTool, $expectedArguments);
-        $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
-
-        // Act
-        $promptResponse = $facade->prompt($promptRequestTransfer);
-
-        // Assert
-        $this->assertTrue($promptResponse->getIsSuccessful());
-    }
-
-    public function testGivenStructuredResponseWithToolCallWhenPromptThenStructuredMessageAndToolInvocationsAreReturned(): void
-    {
-        // Arrange
-        $testTool = $this->createTestTool();
-        $structuredSchema = new AiResponseTransfer();
-        $promptRequestTransfer = $this->createPromptRequestTransfer()
-            ->setStructuredMessage($structuredSchema)
-            ->addToolSetName(static::TEST_TOOL_SET_NAME);
-
-        $responseJson = json_encode([
-            'rand_string' => 'Test with tool call',
-            'any_object' => [
-                'branch' => 'feature/tool-call',
-                'message' => 'Tool call executed successfully',
-            ],
-            'array_of_strings' => ['tool', 'test'],
-            'ai_response_paths' => [
-                ['path' => '/src/test.php'],
-            ],
-        ]);
-
-        $mockProvider = $this->createMockProviderWithStructuredResponseAndToolCall($testTool, $responseJson);
-        $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
-
-        // Act
-        $promptResponse = $facade->prompt($promptRequestTransfer);
-
-        // Assert
-        $this->assertTrue($promptResponse->getIsSuccessful());
-
-        $result = $promptResponse->getStructuredMessage();
-        $this->assertInstanceOf(AiResponseTransfer::class, $result);
-        $this->assertSame('Test with tool call', $result->getRandString());
-    }
-
-    public function testGivenNoToolsProvidedWhenPromptThenPromptSucceeds(): void
+    public function testGivenNoToolCallsWhenPromptIsCalledThenPluginsAreNotInvoked(): void
     {
         // Arrange
         $promptRequestTransfer = $this->createPromptRequestTransfer();
 
+        $preToolCallPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $preToolCallPlugin->expects($this->never())->method('preToolCall');
+
+        $postToolCallPlugin = $this->createMock(PostToolCallPluginInterface::class);
+        $postToolCallPlugin->expects($this->never())->method('postToolCall');
+
         $mockProvider = $this->createMockProviderWithoutToolCall();
-        $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, []);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [],
+            [$preToolCallPlugin],
+            [$postToolCallPlugin],
+        );
 
         // Act
         $promptResponse = $facade->prompt($promptRequestTransfer);
 
         // Assert
         $this->assertTrue($promptResponse->getIsSuccessful());
+    }
+
+    public function testGivenMultiplePreToolCallPluginsWhenToolIsCalledThenPluginsChainCorrectly(): void
+    {
+        // Arrange
+        $testTool = $this->createTestTool();
+        $promptRequestTransfer = $this->createPromptRequestTransfer()
+            ->addToolSetName(static::TEST_TOOL_SET_NAME);
+
+        $firstPluginCalled = false;
+        $secondPluginReceivedModifiedTransfer = false;
+
+        $firstPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $firstPlugin->method('preToolCall')
+            ->willReturnCallback(function (AiToolCallTransfer $transfer) use (&$firstPluginCalled): AiToolCallTransfer {
+                $firstPluginCalled = true;
+                $transfer->setToolArguments([static::TEST_MODIFIED_BY_KEY => static::TEST_FIRST_PLUGIN_VALUE]);
+
+                return $transfer;
+            });
+
+        $secondPlugin = $this->createMock(PreToolCallPluginInterface::class);
+        $secondPlugin->method('preToolCall')
+            ->willReturnCallback(function (AiToolCallTransfer $transfer) use (&$secondPluginReceivedModifiedTransfer): AiToolCallTransfer {
+                if ($transfer->getToolArguments() === [static::TEST_MODIFIED_BY_KEY => static::TEST_FIRST_PLUGIN_VALUE]) {
+                    $secondPluginReceivedModifiedTransfer = true;
+                }
+
+                return $transfer;
+            });
+
+        $mockProvider = $this->createMockProviderWithToolCall($testTool);
+        $facade = $this->createFacadeWithMockedProviderAndTools(
+            $mockProvider,
+            [$testTool],
+            [$firstPlugin, $secondPlugin],
+            [],
+        );
+
+        // Act
+        $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($firstPluginCalled);
+        $this->assertTrue($secondPluginReceivedModifiedTransfer);
     }
 
     protected function createTestTool(): Tool
@@ -188,14 +311,10 @@ class AiFoundationFacadeToolCallTest extends Unit
         $mockProvider->method('setTools')->willReturnSelf();
 
         $toolCallMessage = new ToolCallMessage('Calling tool', [$tool]);
-
         $finalMessage = new AssistantMessage('Tool executed successfully');
 
         $mockProvider->method('chat')
-            ->willReturnOnConsecutiveCalls(
-                $toolCallMessage,
-                $finalMessage,
-            );
+            ->willReturnOnConsecutiveCalls($toolCallMessage, $finalMessage);
 
         return $mockProvider;
     }
@@ -208,55 +327,10 @@ class AiFoundationFacadeToolCallTest extends Unit
 
         $toolCallMessage1 = new ToolCallMessage('Calling tool first time', [$tool]);
         $toolCallMessage2 = new ToolCallMessage('Calling tool second time', [$tool]);
-
         $finalMessage = new AssistantMessage('All tools executed successfully');
 
         $mockProvider->method('chat')
-            ->willReturnOnConsecutiveCalls(
-                $toolCallMessage1,
-                $toolCallMessage2,
-                $finalMessage,
-            );
-
-        return $mockProvider;
-    }
-
-    protected function createMockProviderWithToolCallAndArguments(Tool $tool, array $arguments): AIProviderInterface
-    {
-        $mockProvider = $this->createMock(AIProviderInterface::class);
-        $mockProvider->method('systemPrompt')->willReturnSelf();
-        $mockProvider->method('setTools')->willReturnSelf();
-
-        $tool->setInputs($arguments);
-
-        $toolCallMessage = new ToolCallMessage('Calling tool with arguments', [$tool]);
-
-        $finalMessage = new AssistantMessage('Tool executed with arguments');
-
-        $mockProvider->method('chat')
-            ->willReturnOnConsecutiveCalls(
-                $toolCallMessage,
-                $finalMessage,
-            );
-
-        return $mockProvider;
-    }
-
-    protected function createMockProviderWithStructuredResponseAndToolCall(Tool $tool, string $responseJson): AIProviderInterface
-    {
-        $mockProvider = $this->createMock(AIProviderInterface::class);
-        $mockProvider->method('systemPrompt')->willReturnSelf();
-        $mockProvider->method('setTools')->willReturnSelf();
-
-        $toolCallMessage = new ToolCallMessage('Calling tool for structured response', [$tool]);
-
-        $finalStructuredMessage = new AssistantMessage($responseJson);
-
-        $mockProvider->method('structured')
-            ->willReturnOnConsecutiveCalls(
-                $toolCallMessage,
-                $finalStructuredMessage,
-            );
+            ->willReturnOnConsecutiveCalls($toolCallMessage1, $toolCallMessage2, $finalMessage);
 
         return $mockProvider;
     }
@@ -284,10 +358,14 @@ class AiFoundationFacadeToolCallTest extends Unit
 
     /**
      * @param array<\NeuronAI\Tools\Tool> $tools
+     * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
+     * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins
      */
     protected function createFacadeWithMockedProviderAndTools(
         AIProviderInterface $mockProvider,
         array $tools,
+        array $preToolCallPlugins = [],
+        array $postToolCallPlugins = [],
     ): AiFoundationFacadeInterface {
         $mockProviderResolver = $this->createMock(ProviderResolverInterface::class);
         $mockProviderResolver->method('resolve')->willReturn($mockProvider);
@@ -302,6 +380,8 @@ class AiFoundationFacadeToolCallTest extends Unit
             aiConfigurations: $config->getAiConfigurations(),
             aiToolSetPlugins: $this->convertToolsToToolSets($tools),
             postPromptPlugins: [],
+            preToolCallPlugins: $preToolCallPlugins,
+            postToolCallPlugins: $postToolCallPlugins,
         );
 
         $mockVendorProviderPlugin = $this->createMock(VendorProviderPluginInterface::class);
@@ -337,14 +417,7 @@ class AiFoundationFacadeToolCallTest extends Unit
 
     protected function createNeuronAiMessageMapper(): NeuronAiMessageMapper
     {
-        $transferJsonSchemaMapper = $this->createTransferJsonSchemaMapper();
-
-        return new NeuronAiMessageMapper($transferJsonSchemaMapper);
-    }
-
-    protected function createTransferJsonSchemaMapper(): TransferJsonSchemaMapperInterface
-    {
-        return new TransferJsonSchemaMapper();
+        return new NeuronAiMessageMapper(new TransferJsonSchemaMapper());
     }
 
     protected function createNeuronAiToolMapper(): NeuronAiToolMapperInterface

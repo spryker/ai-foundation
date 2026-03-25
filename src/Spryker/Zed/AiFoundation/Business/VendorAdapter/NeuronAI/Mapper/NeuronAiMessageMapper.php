@@ -23,7 +23,6 @@ use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Chat\Messages\ToolCallResultMessage;
 use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Chat\Messages\UserMessage;
-use NeuronAI\Tools\ToolInterface;
 use ReflectionClass;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
@@ -77,6 +76,10 @@ class NeuronAiMessageMapper
             $promptMessageTransfer->addAttachment($attachmentTransfer);
         }
 
+        if ($message instanceof ToolCallMessage || $message instanceof ToolCallResultMessage) {
+            $this->mapToolsToPromptMessage($message, $promptMessageTransfer);
+        }
+
         return $promptMessageTransfer;
     }
 
@@ -109,15 +112,32 @@ class NeuronAiMessageMapper
 
     protected function mapMessageRole(Message $message): string
     {
+        // Specific subtypes must be checked before their parent classes:
+        // ToolCallMessage extends AssistantMessage, ToolCallResultMessage extends UserMessage
         return match (true) {
+            $message instanceof ToolCallMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL,
+            $message instanceof ToolCallResultMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_RESULT,
             $message instanceof UserMessage => AiFoundationConstants::MESSAGE_TYPE_USER,
             $message instanceof AssistantMessage => AiFoundationConstants::MESSAGE_TYPE_ASSISTANT,
-            // @phpstan-ignore-next-line instanceof checks work during active conversation but may fail for deserialized messages from Redis
-            $message instanceof ToolCallMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL,
-            // @phpstan-ignore-next-line instanceof checks work during active conversation but may fail for deserialized messages from Redis
-            $message instanceof ToolCallResultMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_RESULT,
             default => AiFoundationConstants::MESSAGE_TYPE_ASSISTANT,
         };
+    }
+
+    protected function mapToolsToPromptMessage(
+        ToolCallMessage|ToolCallResultMessage $message,
+        PromptMessageTransfer $promptMessageTransfer,
+    ): void {
+        foreach ($message->getTools() as $tool) {
+            $toolInvocationTransfer = (new ToolInvocationTransfer())
+                ->setName($tool->getName())
+                ->setArguments($tool->getInputs());
+
+            if ($message instanceof ToolCallResultMessage) {
+                $toolInvocationTransfer->setResult($tool->getResult());
+            }
+
+            $promptMessageTransfer->addToolInvocation($toolInvocationTransfer);
+        }
     }
 
     protected function mapAttachmentTransferToAttachment(AttachmentTransfer $attachmentTransfer): Attachment
@@ -178,30 +198,6 @@ class NeuronAiMessageMapper
             AttachmentContentType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
             default => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
         };
-    }
-
-    /**
-     * @param array<\NeuronAI\Tools\ToolInterface> $executedTools
-     *
-     * @return array<\Generated\Shared\Transfer\ToolInvocationTransfer>
-     */
-    public function mapExecutedToolsToToolInvocations(array $executedTools): array
-    {
-        $toolInvocations = [];
-
-        foreach ($executedTools as $tool) {
-            $toolInvocations[] = $this->mapExecutedToolToToolInvocation($tool);
-        }
-
-        return $toolInvocations;
-    }
-
-    protected function mapExecutedToolToToolInvocation(ToolInterface $tool): ToolInvocationTransfer
-    {
-        return (new ToolInvocationTransfer())
-            ->setName($tool->getName())
-            ->setArguments($tool->getInputs())
-            ->setResult($tool->getResult());
     }
 
     /**

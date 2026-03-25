@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI;
 
 use ArrayObject;
+use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
@@ -21,6 +22,7 @@ use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Chat\Messages\ToolCallResultMessage;
 use NeuronAI\Providers\AIProviderInterface;
+use NeuronAI\Tools\ToolInterface;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException;
@@ -74,6 +76,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
      * @param array<string, array<string, mixed>> $aiConfigurations
      * @param array<\Spryker\Zed\AiFoundation\Dependency\Tools\ToolSetPluginInterface> $aiToolSetPlugins
      * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostPromptPluginInterface> $postPromptPlugins
+     * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
+     * @param array<\Spryker\Zed\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins
      */
     public function __construct(
         protected ProviderResolverInterface $providerResolver,
@@ -83,6 +87,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         protected array $aiConfigurations,
         protected array $aiToolSetPlugins,
         protected array $postPromptPlugins,
+        protected array $preToolCallPlugins = [],
+        protected array $postToolCallPlugins = [],
     ) {
     }
 
@@ -110,8 +116,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         $startTime = microtime(true);
 
         $promptResponseTransfer = $structuredSchema instanceof AbstractTransfer
-            ? $this->executeStructuredPrompt($provider, $message, $structuredSchema, $maxRetries, $chatHistory)
-            : $this->executePlainPrompt($provider, $message, $maxRetries, $chatHistory);
+            ? $this->executeStructuredPrompt($provider, $message, $structuredSchema, $maxRetries, $promptRequest, $chatHistory)
+            : $this->executePlainPrompt($provider, $message, $maxRetries, $promptRequest, $chatHistory);
 
         $promptResponseTransfer = $promptResponseTransfer
             ->setProvider($providerName)
@@ -129,11 +135,11 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         AIProviderInterface $provider,
         Message $message,
         int $maxRetries,
+        PromptRequestTransfer $promptRequestTransfer,
         ?ChatHistoryInterface $chatHistory = null,
     ): PromptResponseTransfer {
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
-        $toolInvocationTransfers = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $conversationMessages = $this->prepareConversationMessages($chatHistory, $message);
@@ -142,10 +148,10 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                 $response = $provider->chat($conversationMessages);
 
                 while ($response instanceof ToolCallMessage) {
-                    [$conversationMessages, $toolInvocationTransfers] = $this->processToolCallAndUpdateHistory(
+                    $conversationMessages = $this->processToolCallAndUpdateHistory(
                         $response,
                         $conversationMessages,
-                        $toolInvocationTransfers,
+                        $promptRequestTransfer,
                     );
 
                     $response = $provider->chat($conversationMessages);
@@ -164,7 +170,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             }
         }
 
-        return $this->finalizePromptResponse($promptResponseTransfer, $toolInvocationTransfers, $exceptions);
+        return $this->finalizePromptResponse($promptResponseTransfer, $exceptions);
     }
 
     protected function executeStructuredPrompt(
@@ -172,6 +178,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         Message $message,
         AbstractTransfer $structuredSchema,
         int $maxRetries,
+        PromptRequestTransfer $promptRequestTransfer,
         ?ChatHistoryInterface $chatHistory = null,
     ): PromptResponseTransfer {
         $structuredResponseFormat = $this->messageMapper->mapTransferToStructuredResponseFormat($structuredSchema);
@@ -180,7 +187,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
         $responseContents = [];
-        $toolInvocationTransfers = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $response = null;
@@ -191,10 +197,10 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                 $response = $provider->structured($conversationMessages, $structuredSchemaClass, $structuredResponseFormat);
 
                 while ($response instanceof ToolCallMessage) {
-                    [$conversationMessages, $toolInvocationTransfers] = $this->processToolCallAndUpdateHistory(
+                    $conversationMessages = $this->processToolCallAndUpdateHistory(
                         $response,
                         $conversationMessages,
-                        $toolInvocationTransfers,
+                        $promptRequestTransfer,
                     );
 
                     $response = $provider->structured($conversationMessages, $structuredSchemaClass, $structuredResponseFormat);
@@ -226,7 +232,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             }
         }
 
-        return $this->finalizePromptResponse($promptResponseTransfer, $toolInvocationTransfers, $exceptions, $responseContents, get_class($structuredSchema));
+        return $this->finalizePromptResponse($promptResponseTransfer, $exceptions, $responseContents, get_class($structuredSchema));
     }
 
     /**
@@ -363,65 +369,87 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     }
 
     /**
-     * @param \NeuronAI\Chat\Messages\ToolCallMessage $toolCallMessage
-     *
      * @return array<\NeuronAI\Tools\ToolInterface>
      */
-    protected function executeToolCalls(ToolCallMessage $toolCallMessage): array
-    {
+    protected function executeToolCalls(
+        ToolCallMessage $toolCallMessage,
+        PromptRequestTransfer $promptRequestTransfer,
+    ): array {
         $tools = $toolCallMessage->getTools();
 
         foreach ($tools as $tool) {
-            $tool->execute();
+            $aiToolCallTransfer = $this->createAiToolCallTransfer($tool, $promptRequestTransfer);
+
+            $aiToolCallTransfer = $this->executePreToolCallPlugins($aiToolCallTransfer);
+
+            if ($aiToolCallTransfer->getIsExecutionAllowed() !== false) {
+                $tool->execute();
+            }
+
+            $aiToolCallTransfer->setToolResult($tool->getResult());
+
+            $this->executePostToolCallPlugins($aiToolCallTransfer);
         }
 
         return $tools;
     }
 
+    protected function createAiToolCallTransfer(
+        ToolInterface $tool,
+        PromptRequestTransfer $promptRequestTransfer,
+    ): AiToolCallTransfer {
+        return (new AiToolCallTransfer())
+            ->setToolName($tool->getName())
+            ->setToolArguments($tool->getInputs())
+            ->setPromptRequest($promptRequestTransfer)
+            ->setIsExecutionAllowed(true);
+    }
+
+    protected function executePreToolCallPlugins(AiToolCallTransfer $aiToolCallTransfer): AiToolCallTransfer
+    {
+        foreach ($this->preToolCallPlugins as $preToolCallPlugin) {
+            $aiToolCallTransfer = $preToolCallPlugin->preToolCall($aiToolCallTransfer);
+        }
+
+        return $aiToolCallTransfer;
+    }
+
+    protected function executePostToolCallPlugins(AiToolCallTransfer $aiToolCallTransfer): void
+    {
+        foreach ($this->postToolCallPlugins as $postToolCallPlugin) {
+            $postToolCallPlugin->postToolCall($aiToolCallTransfer);
+        }
+    }
+
     /**
-     * @param \NeuronAI\Chat\Messages\ToolCallMessage $response
      * @param array<\NeuronAI\Chat\Messages\Message> $conversationMessages
-     * @param array<\Generated\Shared\Transfer\ToolInvocationTransfer> $toolInvocationTransfers
      *
-     * @return array{array<\NeuronAI\Chat\Messages\Message>, array<\Generated\Shared\Transfer\ToolInvocationTransfer>}
+     * @return array<\NeuronAI\Chat\Messages\Message>
      */
     protected function processToolCallAndUpdateHistory(
         ToolCallMessage $response,
         array $conversationMessages,
-        array $toolInvocationTransfers,
+        PromptRequestTransfer $promptRequestTransfer,
     ): array {
-        $executedTools = $this->executeToolCalls($response);
+        $executedTools = $this->executeToolCalls($response, $promptRequestTransfer);
 
         $toolResultMessage = new ToolCallResultMessage($executedTools);
         $conversationMessages[] = $response;
         $conversationMessages[] = $toolResultMessage;
 
-        $mappedToolInvocations = $this->messageMapper->mapExecutedToolsToToolInvocations($executedTools);
-        $toolInvocationTransfers = array_merge($toolInvocationTransfers, $mappedToolInvocations);
-
-        return [$conversationMessages, $toolInvocationTransfers];
+        return $conversationMessages;
     }
 
     /**
-     * @param \Generated\Shared\Transfer\PromptResponseTransfer $promptResponseTransfer
-     * @param array<\Generated\Shared\Transfer\ToolInvocationTransfer> $toolInvocationTransfers
      * @param array<\Throwable> $exceptions
      * @param array<string|null> $responseContents
-     * @param string|null $entityIdentifier
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     protected function finalizePromptResponse(
         PromptResponseTransfer $promptResponseTransfer,
-        array $toolInvocationTransfers,
         array $exceptions,
         array $responseContents = [],
         ?string $entityIdentifier = null,
     ): PromptResponseTransfer {
-        foreach ($toolInvocationTransfers as $toolInvocationTransfer) {
-            $promptResponseTransfer->addToolInvocation($toolInvocationTransfer);
-        }
-
         if ($promptResponseTransfer->getIsSuccessful() === null) {
             $promptResponseTransfer->setIsSuccessful(false);
         }

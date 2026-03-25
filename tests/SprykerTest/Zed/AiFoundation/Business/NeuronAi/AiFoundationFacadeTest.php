@@ -156,7 +156,6 @@ class AiFoundationFacadeTest extends Unit
     /**
      * @dataProvider providerResolvingDataProvider
      *
-     * @param string $providerName
      * @param array<string, mixed> $providerConfig
      */
     public function testProviderIsResolvedCorrectly(string $providerName, array $providerConfig): void

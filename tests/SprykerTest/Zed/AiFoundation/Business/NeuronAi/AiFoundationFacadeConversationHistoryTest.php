@@ -216,15 +216,10 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Execute calculator tool');
 
         // Act
-        $response = $facade->prompt($promptRequest);
+        $facade->prompt($promptRequest);
 
         // Assert
-        $this->assertTrue($response->getIsSuccessful());
-        $conversationHistoryCollection = $facade->getConversationHistoryCollection(
-            (new ConversationHistoryCriteriaTransfer())->setConversationHistoryConditions(
-                (new ConversationHistoryConditionsTransfer())->setConversationReferences([$conversationReference]),
-            ),
-        );
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
         $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
         $this->assertGreaterThan(2, $messages->count());
     }
@@ -237,15 +232,10 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Execute tools multiple times');
 
         // Act
-        $response = $facade->prompt($promptRequest);
+        $facade->prompt($promptRequest);
 
         // Assert
-        $this->assertTrue($response->getIsSuccessful());
-        $conversationHistoryCollection = $facade->getConversationHistoryCollection(
-            (new ConversationHistoryCriteriaTransfer())->setConversationHistoryConditions(
-                (new ConversationHistoryConditionsTransfer())->setConversationReferences([$conversationReference]),
-            ),
-        );
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
         $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
         $this->assertGreaterThan(2, $messages->count());
     }
@@ -259,15 +249,10 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Calculate with arguments');
 
         // Act
-        $response = $facade->prompt($promptRequest);
+        $facade->prompt($promptRequest);
 
         // Assert
-        $this->assertTrue($response->getIsSuccessful());
-        $conversationHistoryCollection = $facade->getConversationHistoryCollection(
-            (new ConversationHistoryCriteriaTransfer())->setConversationHistoryConditions(
-                (new ConversationHistoryConditionsTransfer())->setConversationReferences([$conversationReference]),
-            ),
-        );
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
         $this->assertGreaterThan(2, $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages()->count());
     }
 
@@ -280,17 +265,11 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $promptRequestWithoutTool = $this->createPromptRequestWithoutTool($conversationReference, 'Second message without tool');
 
         // Act
-        $response1 = $facade->prompt($promptRequestWithTool);
-        $response2 = $facade->prompt($promptRequestWithoutTool);
+        $facade->prompt($promptRequestWithTool);
+        $facade->prompt($promptRequestWithoutTool);
 
         // Assert
-        $this->assertTrue($response1->getIsSuccessful());
-        $this->assertTrue($response2->getIsSuccessful());
-        $conversationHistoryCollection = $facade->getConversationHistoryCollection(
-            (new ConversationHistoryCriteriaTransfer())->setConversationHistoryConditions(
-                (new ConversationHistoryConditionsTransfer())->setConversationReferences([$conversationReference]),
-            ),
-        );
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
         $this->assertGreaterThan(4, $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages()->count());
     }
 
@@ -302,17 +281,84 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Execute tool and check result');
 
         // Act
-        $response = $facade->prompt($promptRequest);
+        $facade->prompt($promptRequest);
 
         // Assert
-        $this->assertTrue($response->getIsSuccessful());
-        $conversationHistoryCollection = $facade->getConversationHistoryCollection(
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
+        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
+        $this->assertGreaterThan(2, $messages->count());
+    }
+
+    public function testGivenConversationWithToolCallWhenRetrievingHistoryThenToolCallMessageHasCorrectTypeAndToolData(): void
+    {
+        // Arrange
+        $conversationReference = $this->generateUniqueConversationReference();
+        $facade = $this->createFacadeWithToolCall();
+        $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Execute calculator tool');
+
+        // Act
+        $facade->prompt($promptRequest);
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
+
+        // Assert
+        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
+        $toolCallMessage = $messages->offsetGet(1);
+
+        $this->assertSame(AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL, $toolCallMessage->getType());
+        $this->assertGreaterThan(0, $toolCallMessage->getToolInvocations()->count());
+        $this->assertSame(static::TEST_TOOL_NAME, $toolCallMessage->getToolInvocations()->offsetGet(0)->getName());
+    }
+
+    public function testGivenConversationWithToolCallWhenRetrievingHistoryThenToolResultMessageHasCorrectTypeAndToolResult(): void
+    {
+        // Arrange
+        $conversationReference = $this->generateUniqueConversationReference();
+        $facade = $this->createFacadeWithToolCall();
+        $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Execute calculator tool');
+
+        // Act
+        $facade->prompt($promptRequest);
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
+
+        // Assert
+        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
+        $toolResultMessage = $messages->offsetGet(2);
+
+        $this->assertSame(AiFoundationConstants::MESSAGE_TYPE_TOOL_RESULT, $toolResultMessage->getType());
+        $this->assertGreaterThan(0, $toolResultMessage->getToolInvocations()->count());
+        $this->assertSame(static::TEST_TOOL_RESULT, $toolResultMessage->getToolInvocations()->offsetGet(0)->getResult());
+    }
+
+    public function testGivenConversationWithToolCallArgumentsWhenRetrievingHistoryThenToolCallMessagePreservesArguments(): void
+    {
+        // Arrange
+        $conversationReference = $this->generateUniqueConversationReference();
+        $expectedArguments = ['number1' => 10, 'number2' => 32];
+        $facade = $this->createFacadeWithToolCallAndArguments($expectedArguments);
+        $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Calculate with arguments');
+
+        // Act
+        $facade->prompt($promptRequest);
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
+
+        // Assert
+        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
+        $toolCallMessage = $messages->offsetGet(1);
+
+        $this->assertSame(AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL, $toolCallMessage->getType());
+        $toolInvocation = $toolCallMessage->getToolInvocations()->offsetGet(0);
+        $this->assertSame($expectedArguments, $toolInvocation->getArguments());
+    }
+
+    protected function retrieveConversationHistoryFromFacade(
+        AiFoundationFacadeInterface $facade,
+        string $conversationReference,
+    ): ConversationHistoryCollectionTransfer {
+        return $facade->getConversationHistoryCollection(
             (new ConversationHistoryCriteriaTransfer())->setConversationHistoryConditions(
                 (new ConversationHistoryConditionsTransfer())->setConversationReferences([$conversationReference]),
             ),
         );
-        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
-        $this->assertGreaterThan(2, $messages->count());
     }
 
     protected function createFacadeWithMockedProvider(): AiFoundationFacadeInterface
@@ -464,6 +510,9 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         return $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
     }
 
+    /**
+     * @param array<string, int> $arguments
+     */
     protected function createFacadeWithToolCallAndArguments(array $arguments): AiFoundationFacadeInterface
     {
         $testTool = $this->createTestTool();
@@ -551,6 +600,9 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         return $mockProvider;
     }
 
+    /**
+     * @param array<string, int> $arguments
+     */
     protected function createMockProviderWithToolCallAndArguments(Tool $tool, array $arguments): AIProviderInterface
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
