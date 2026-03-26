@@ -8,6 +8,7 @@
 namespace Spryker\Zed\AiFoundation;
 
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
+use Spryker\Zed\AiFoundation\Exception\AiFoundationConfigurationResolverException;
 use Spryker\Zed\Kernel\AbstractBundleConfig;
 
 class AiFoundationConfig extends AbstractBundleConfig
@@ -36,7 +37,9 @@ class AiFoundationConfig extends AbstractBundleConfig
      */
     public function getAiConfigurations(): array
     {
-        return $this->get(AiFoundationConstants::AI_CONFIGURATIONS);
+        $configurations = $this->get(AiFoundationConstants::AI_CONFIGURATIONS);
+
+        return $this->resolveConfigurationReferences($configurations);
     }
 
     /**
@@ -109,5 +112,66 @@ class AiFoundationConfig extends AbstractBundleConfig
     protected function getAiWorkflowInitialStateMapForProcess(): array
     {
         return [];
+    }
+
+    /**
+     * @param array<string, mixed> $configurations
+     *
+     * @throws \Spryker\Zed\AiFoundation\Exception\AiFoundationConfigurationResolverException
+     *
+     * @return array<string, mixed>
+     */
+    protected function resolveConfigurationReferences(array $configurations): array
+    {
+        $unresolvedReferences = [];
+        $resolved = $this->doResolveConfigurationReferences($configurations, $unresolvedReferences);
+
+        if ($unresolvedReferences === []) {
+            return $resolved;
+        }
+
+        throw new AiFoundationConfigurationResolverException(
+            sprintf(
+                'Unable to resolve the following configuration references: "%s". '
+                . 'Configuration references use the "%s" prefix and are resolved via \Spryker\Zed\Configuration\Business\ConfigurationFacade::getConfigurationValue(). '
+                . 'Ensure the referenced keys are defined in your configuration (e.g. config/Shared/*.php).',
+                implode('", "', $unresolvedReferences),
+                AiFoundationConstants::CONFIGURATION_REFERENCE_PREFIX,
+            ),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $configurations
+     * @param array<string> $unresolvedReferences
+     *
+     * @return array<string, mixed>
+     */
+    protected function doResolveConfigurationReferences(array $configurations, array &$unresolvedReferences): array
+    {
+        foreach ($configurations as $key => $value) {
+            if (is_array($value)) {
+                $configurations[$key] = $this->doResolveConfigurationReferences($value, $unresolvedReferences);
+
+                continue;
+            }
+
+            if (!is_string($value) || !str_starts_with($value, AiFoundationConstants::CONFIGURATION_REFERENCE_PREFIX)) {
+                continue;
+            }
+
+            $configurationKey = substr($value, strlen(AiFoundationConstants::CONFIGURATION_REFERENCE_PREFIX));
+            $resolvedValue = $this->getModuleConfig($configurationKey);
+
+            if ($resolvedValue === null) {
+                $unresolvedReferences[] = $value;
+
+                continue;
+            }
+
+            $configurations[$key] = $resolvedValue;
+        }
+
+        return $configurations;
     }
 }

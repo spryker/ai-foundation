@@ -302,4 +302,13 @@ interface AiFoundationConstants
      * @api
      */
     public const string AUDIT_LOG_CONTEXT_KEY_TRANSFER = 'ai_interaction_log';
+
+    /**
+     * Specification:
+     * - Defines the prefix pattern used to identify configuration references in AI configuration values.
+     * - Values prefixed with this string are resolved at runtime via `\Spryker\Zed\Configuration\Business\ConfigurationFacade::getConfigurationValue()`.
+     *
+     * @api
+     */
+    public const string CONFIGURATION_REFERENCE_PREFIX = 'configuration::';
 }
