@@ -10,7 +10,7 @@ namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryRe
 use NeuronAI\Chat\History\ChatHistoryInterface;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistory\DbChatHistory;
-use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface;
 
@@ -21,7 +21,7 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
     public function __construct(
         protected AiFoundationEntityManagerInterface $entityManager,
         protected AiFoundationRepositoryInterface $repository,
-        protected NeuronAiMessageMapper $messageMapper,
+        protected NeuronAiMessageMapperInterface $messageMapper,
         protected AiFoundationConfig $config,
     ) {
     }

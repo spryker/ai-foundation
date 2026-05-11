@@ -14,6 +14,8 @@ use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\ContentBlocks\ReasoningContent;
+use NeuronAI\Chat\Messages\ContentBlocks\TextContent;
 use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\Tool;
@@ -350,6 +352,27 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $this->assertSame($expectedArguments, $toolInvocation->getArguments());
     }
 
+    public function testGivenToolCallMessageCarriesReasoningAndTextWhenRetrievingHistoryThenReasoningAndContentArePopulatedSeparately(): void
+    {
+        // Arrange
+        $conversationReference = $this->generateUniqueConversationReference();
+        $facade = $this->createFacadeWithToolCallCarryingReasoning();
+        $promptRequest = $this->createPromptRequestWithTool($conversationReference, 'Run calculator');
+
+        // Act
+        $facade->prompt($promptRequest);
+        $conversationHistoryCollection = $this->retrieveConversationHistoryFromFacade($facade, $conversationReference);
+
+        // Assert
+        $messages = $conversationHistoryCollection->getConversationHistories()->offsetGet(0)->getMessages();
+        $toolCallMessage = $messages->offsetGet(1);
+
+        $this->assertSame(AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL, $toolCallMessage->getType());
+        $this->assertSame('I will use the calculator now.', $toolCallMessage->getContent());
+        $this->assertSame('User wants arithmetic; calculator tool is the right choice.', $toolCallMessage->getReasoning());
+        $this->assertGreaterThan(0, $toolCallMessage->getToolInvocations()->count());
+    }
+
     protected function retrieveConversationHistoryFromFacade(
         AiFoundationFacadeInterface $facade,
         string $conversationReference,
@@ -529,6 +552,14 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         return $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
     }
 
+    protected function createFacadeWithToolCallCarryingReasoning(): AiFoundationFacadeInterface
+    {
+        $testTool = $this->createTestTool();
+        $mockProvider = $this->createMockProviderWithToolCallCarryingReasoning($testTool);
+
+        return $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
+    }
+
     /**
      * @param array<\NeuronAI\Tools\Tool> $tools
      */
@@ -569,6 +600,30 @@ class AiFoundationFacadeConversationHistoryTest extends Unit
         $mockProvider->method('setTools')->willReturnSelf();
 
         $toolCallMessage = new ToolCallMessage('Calling tool', [$tool]);
+        $finalMessage = new AssistantMessage('Tool executed successfully');
+
+        $mockProvider->method('chat')
+            ->willReturnOnConsecutiveCalls(
+                $toolCallMessage,
+                $finalMessage,
+            );
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderWithToolCallCarryingReasoning(Tool $tool): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->method('setTools')->willReturnSelf();
+
+        $toolCallMessage = new ToolCallMessage(
+            [
+                new ReasoningContent('User wants arithmetic; calculator tool is the right choice.'),
+                new TextContent('I will use the calculator now.'),
+            ],
+            [$tool],
+        );
         $finalMessage = new AssistantMessage('Tool executed successfully');
 
         $mockProvider->method('chat')

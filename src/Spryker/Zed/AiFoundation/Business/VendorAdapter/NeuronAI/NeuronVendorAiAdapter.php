@@ -20,13 +20,13 @@ use Generated\Shared\Transfer\PromptResponseTransfer;
 use NeuronAI\Chat\History\ChatHistoryInterface;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\ToolCallMessage;
-use NeuronAI\Chat\Messages\ToolCallResultMessage;
+use NeuronAI\Chat\Messages\ToolResultMessage;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\ToolInterface;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException;
-use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\VendorAdapterInterface;
@@ -81,7 +81,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
      */
     public function __construct(
         protected ProviderResolverInterface $providerResolver,
-        protected NeuronAiMessageMapper $messageMapper,
+        protected NeuronAiMessageMapperInterface $messageMapper,
         protected NeuronAiToolMapperInterface $toolMapper,
         protected ChatHistoryResolverInterface $chatHistoryResolver,
         protected array $aiConfigurations,
@@ -145,7 +145,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             $conversationMessages = $this->prepareConversationMessages($chatHistory, $message);
 
             try {
-                $response = $provider->chat($conversationMessages);
+                $response = $provider->chat(...$conversationMessages);
 
                 while ($response instanceof ToolCallMessage) {
                     $conversationMessages = $this->processToolCallAndUpdateHistory(
@@ -154,7 +154,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                         $promptRequestTransfer,
                     );
 
-                    $response = $provider->chat($conversationMessages);
+                    $response = $provider->chat(...$conversationMessages);
                 }
 
                 $promptResponseTransfer = $this->messageMapper->mapProviderResponseToPromptResponse($response);
@@ -433,7 +433,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     ): array {
         $executedTools = $this->executeToolCalls($response, $promptRequestTransfer);
 
-        $toolResultMessage = new ToolCallResultMessage($executedTools);
+        $toolResultMessage = new ToolResultMessage($executedTools);
         $conversationMessages[] = $response;
         $conversationMessages[] = $toolResultMessage;
 

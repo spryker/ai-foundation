@@ -7,17 +7,22 @@
 
 namespace SprykerTest\Zed\AiFoundation\Business\NeuronAi;
 
+use Aws\Token\BedrockTokenProvider;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
-use NeuronAI\Chat\Attachments\Attachment;
-use NeuronAI\Chat\Enums\AttachmentContentType;
-use NeuronAI\Chat\Enums\AttachmentType;
+use InvalidArgumentException;
+use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\ContentBlocks\FileContent;
+use NeuronAI\Chat\Messages\ContentBlocks\ImageContent;
+use NeuronAI\Chat\Messages\ContentBlocks\ReasoningContent;
+use NeuronAI\Chat\Messages\ContentBlocks\TextContent;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Providers\AIProviderInterface;
+use NeuronAI\Providers\AWS\BedrockRuntime;
 use ReflectionProperty;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
@@ -26,10 +31,12 @@ use Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractor;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolver;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver\ProviderResolverInterface;
 use Spryker\Zed\AiFoundation\Dependency\VendorAdapter\VendorProviderPluginInterface;
 use SprykerTest\Zed\AiFoundation\AiFoundationBusinessTester;
@@ -59,6 +66,12 @@ class AiFoundationFacadeTest extends Unit
     protected const string TEST_USER_MESSAGE = 'Hello, AI!';
 
     protected const string TEST_ASSISTANT_RESPONSE = 'Hello! How can I help you today?';
+
+    protected const string TEST_BEDROCK_MODEL = 'eu.anthropic.claude-sonnet-4-20250514-v1:0';
+
+    protected const string TEST_BEDROCK_REGION = 'eu-west-1';
+
+    protected const string TEST_BEDROCK_BEARER_TOKEN = 'bedrock-api-key-test-bearer-value';
 
     protected AiFoundationBusinessTester $tester;
 
@@ -108,10 +121,8 @@ class AiFoundationFacadeTest extends Unit
 
         $mockProvider->expects($this->once())
             ->method('chat')
-            ->with($this->callback(function (array $messages): bool {
-                $this->assertCount(1, $messages);
-                $this->assertInstanceOf(Message::class, $messages[0]);
-                $this->assertSame(static::TEST_USER_MESSAGE, $messages[0]->getContent());
+            ->with($this->callback(function (Message $message): bool {
+                $this->assertSame(static::TEST_USER_MESSAGE, $message->getContent());
 
                 return true;
             }))
@@ -284,11 +295,31 @@ class AiFoundationFacadeTest extends Unit
         ];
     }
 
+    public function testResolveBedrockProviderWithTokenWiresBearerAuthAndTokenProvider(): void
+    {
+        // Arrange
+        $config = [
+            'model' => static::TEST_BEDROCK_MODEL,
+            'bedrockRuntimeClient' => [
+                'region' => static::TEST_BEDROCK_REGION,
+                'token' => static::TEST_BEDROCK_BEARER_TOKEN,
+            ],
+        ];
+
+        // Act
+        $provider = (new ProviderResolver())->resolve(AiFoundationConstants::PROVIDER_BEDROCK, $config);
+        $client = (new ReflectionProperty(BedrockRuntime::class, 'bedrockRuntimeClient'))->getValue($provider);
+
+        // Assert
+        $this->assertSame([BedrockTokenProvider::BEARER_AUTH], $client->getConfig('auth_scheme_preference'));
+        $this->assertSame(static::TEST_BEDROCK_BEARER_TOKEN, $client->getToken()->wait()->getToken());
+    }
+
     public function testGivenPromptMessageHasSingleDocumentAttachmentWhenPromptingThenAttachmentIsMappedCorrectly(): void
     {
         // Arrange
         $promptRequestTransfer = $this->createPromptRequestWithDocumentAttachment();
-        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $mockProvider = $this->createMockProviderExpectingAttachment(FileContent::class, SourceType::URL);
         $facade = $this->createFacadeWithMockedProvider($mockProvider);
 
         // Act
@@ -299,7 +330,7 @@ class AiFoundationFacadeTest extends Unit
     {
         // Arrange
         $promptRequestTransfer = $this->createPromptRequestWithImageAttachment();
-        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::IMAGE, AttachmentContentType::BASE64);
+        $mockProvider = $this->createMockProviderExpectingAttachment(ImageContent::class, SourceType::BASE64);
         $facade = $this->createFacadeWithMockedProvider($mockProvider);
 
         // Act
@@ -347,22 +378,150 @@ class AiFoundationFacadeTest extends Unit
     {
         // Arrange
         $promptRequestTransfer = $this->createPromptRequestWithUnknownAttachmentType();
-        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $mockProvider = $this->createMockProviderExpectingAttachment(FileContent::class, SourceType::URL);
         $facade = $this->createFacadeWithMockedProvider($mockProvider);
 
         // Act
         $facade->prompt($promptRequestTransfer);
     }
 
-    public function testGivenAttachmentHasUnknownContentTypeWhenMappingThenDefaultsToUrlContentType(): void
+    public function testGivenAttachmentHasUnknownContentTypeWhenMappingThenThrowsInvalidArgumentException(): void
     {
         // Arrange
         $promptRequestTransfer = $this->createPromptRequestWithUnknownContentType();
-        $mockProvider = $this->createMockProviderExpectingAttachment(AttachmentType::DOCUMENT, AttachmentContentType::URL);
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Assert
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported attachment content type "unknown_content_type".');
+
+        // Act
+        $facade->prompt($promptRequestTransfer);
+    }
+
+    public function testGivenPromptMessageHasIdSourceAttachmentWhenPromptingThenContentTypeIsMappedToIdSourceType(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithIdSourceAttachment();
+        $mockProvider = $this->createMockProviderExpectingAttachment(FileContent::class, SourceType::ID);
         $facade = $this->createFacadeWithMockedProvider($mockProvider);
 
         // Act
         $facade->prompt($promptRequestTransfer);
+    }
+
+    public function testGivenProviderReturnsIdSourceAttachmentWhenPromptingThenAttachmentContentTypeIsId(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningIdSourceAttachment();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertCount(1, $promptResponseTransfer->getMessage()->getAttachments());
+        $attachmentTransfer = $promptResponseTransfer->getMessage()->getAttachments()->offsetGet(0);
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE, $attachmentTransfer->getType());
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_ID, $attachmentTransfer->getContentType());
+        $this->assertSame('file-abc123', $attachmentTransfer->getContent());
+    }
+
+    public function testGivenProviderReturnsReasoningAndTextWhenPromptingThenReasoningAndContentArePopulatedSeparately(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningReasoningAndText();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertSame(static::TEST_ASSISTANT_RESPONSE, $promptResponseTransfer->getMessage()->getContent());
+        $this->assertSame('Step 1: parse input.' . "\n\n" . 'Step 2: pick branch.', $promptResponseTransfer->getMessage()->getReasoning());
+    }
+
+    public function testGivenProviderReturnsTextOnlyWhenPromptingThenReasoningIsNull(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockAiProvider();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertSame(static::TEST_ASSISTANT_RESPONSE, $promptResponseTransfer->getMessage()->getContent());
+        $this->assertNull($promptResponseTransfer->getMessage()->getReasoning());
+    }
+
+    public function testGivenProviderReturnsReasoningOnlyWhenPromptingThenContentIsNullAndReasoningIsPopulated(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningReasoningOnly();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertNotNull($promptResponseTransfer->getMessage());
+        $this->assertNull($promptResponseTransfer->getMessage()->getContent());
+        $this->assertSame('Internal scratch pad only.', $promptResponseTransfer->getMessage()->getReasoning());
+    }
+
+    public function testGivenDocumentAttachmentHasFilenameWhenPromptingThenFilenameIsForwardedToFileContentBlock(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestWithDocumentAttachmentAndFilename();
+        $mockProvider = $this->createMockProviderExpectingFileContentWithFilename('quarterly-report.pdf');
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $facade->prompt($promptRequestTransfer);
+    }
+
+    public function testGivenProviderReturnsFileContentWithFilenameWhenPromptingThenFilenameIsMappedBackToAttachmentTransfer(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningFileContentWithFilename();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertCount(1, $promptResponseTransfer->getMessage()->getAttachments());
+        $attachmentTransfer = $promptResponseTransfer->getMessage()->getAttachments()->offsetGet(0);
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT, $attachmentTransfer->getType());
+        $this->assertSame('user-manual.pdf', $attachmentTransfer->getFilename());
+        $this->assertSame('https://example.com/user-manual.pdf', $attachmentTransfer->getContent());
+    }
+
+    public function testGivenImageAttachmentWhenPromptingThenFilenameIsNotSetOnAttachmentTransfer(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer();
+        $mockProvider = $this->createMockProviderReturningAttachments();
+        $facade = $this->createFacadeWithMockedProvider($mockProvider);
+
+        // Act
+        $promptResponseTransfer = $facade->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertCount(1, $promptResponseTransfer->getMessage()->getAttachments());
+        $attachmentTransfer = $promptResponseTransfer->getMessage()->getAttachments()->offsetGet(0);
+        $this->assertSame(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE, $attachmentTransfer->getType());
+        $this->assertNull($attachmentTransfer->getFilename());
     }
 
     public function testPromptReturnsMessageWithUsageWhenProviderIncludesTokenCounts(): void
@@ -377,14 +536,12 @@ class AiFoundationFacadeTest extends Unit
             ->willReturnSelf();
 
         $usage = new Usage(inputTokens: 100, outputTokens: 50);
-        $mockMessage = $this->createMock(AssistantMessage::class);
-        $mockMessage->method('getContent')->willReturn(static::TEST_ASSISTANT_RESPONSE);
-        $mockMessage->method('getUsage')->willReturn($usage);
-        $mockMessage->method('getAttachments')->willReturn([]);
+        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
+        $this->setMessageUsage($assistantMessage, $usage);
 
         $mockProvider->expects($this->once())
             ->method('chat')
-            ->willReturn($mockMessage);
+            ->willReturn($assistantMessage);
 
         $facade = $this->createFacadeWithMockedProvider($mockProvider);
 
@@ -500,6 +657,40 @@ class AiFoundationFacadeTest extends Unit
         return (new PromptRequestTransfer())->setAiConfigurationName(static::TEST_AI_ENGINE)->setPromptMessage($promptMessageTransfer);
     }
 
+    protected function createPromptRequestWithIdSourceAttachment(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())
+            ->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)
+            ->setContent('file-abc123')
+            ->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_ID);
+
+        $promptMessageTransfer = (new PromptMessageTransfer())
+            ->setContent(static::TEST_USER_MESSAGE)
+            ->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())
+            ->setAiConfigurationName(static::TEST_AI_ENGINE)
+            ->setPromptMessage($promptMessageTransfer);
+    }
+
+    protected function createPromptRequestWithDocumentAttachmentAndFilename(): PromptRequestTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())
+            ->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)
+            ->setContent('https://example.com/quarterly-report.pdf')
+            ->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL)
+            ->setMediaType('application/pdf')
+            ->setFilename('quarterly-report.pdf');
+
+        $promptMessageTransfer = (new PromptMessageTransfer())
+            ->setContent(static::TEST_USER_MESSAGE)
+            ->addAttachment($attachmentTransfer);
+
+        return (new PromptRequestTransfer())
+            ->setAiConfigurationName(static::TEST_AI_ENGINE)
+            ->setPromptMessage($promptMessageTransfer);
+    }
+
     protected function createDocumentAttachment(): AttachmentTransfer
     {
         return (new AttachmentTransfer())->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)->setContent('https://example.com/document.pdf')->setContentType(AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL);
@@ -526,35 +717,18 @@ class AiFoundationFacadeTest extends Unit
         return $mockProvider;
     }
 
-    protected function createMockAiProviderWithUsage(int $inputTokens, int $outputTokens): AIProviderInterface
-    {
-        $mockProvider = $this->createMock(AIProviderInterface::class);
-
-        $mockProvider->expects($this->once())
-            ->method('systemPrompt')
-            ->with(static::TEST_SYSTEM_PROMPT)
-            ->willReturnSelf();
-
-        $usage = new Usage(inputTokens: $inputTokens, outputTokens: $outputTokens);
-        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
-        $this->setMessageUsage($assistantMessage, $usage);
-
-        $mockProvider->expects($this->once())
-            ->method('chat')
-            ->willReturn($assistantMessage);
-
-        return $mockProvider;
-    }
-
-    protected function createMockProviderExpectingAttachment(AttachmentType $expectedType, AttachmentContentType $expectedContentType): AIProviderInterface
+    /**
+     * @param class-string<\NeuronAI\Chat\Messages\ContentBlocks\ImageContent|\NeuronAI\Chat\Messages\ContentBlocks\FileContent> $expectedBlockClass
+     */
+    protected function createMockProviderExpectingAttachment(string $expectedBlockClass, SourceType $expectedSourceType): AIProviderInterface
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
         $mockProvider->method('systemPrompt')->willReturnSelf();
-        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages) use ($expectedType, $expectedContentType): bool {
-            $attachments = $messages[0]->getAttachments();
-            $this->assertCount(1, $attachments);
-            $this->assertSame($expectedType, $attachments[0]->type);
-            $this->assertSame($expectedContentType, $attachments[0]->contentType);
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (Message $message) use ($expectedBlockClass, $expectedSourceType): bool {
+            $attachmentBlocks = $this->extractAttachmentBlocks($message);
+            $this->assertCount(1, $attachmentBlocks);
+            $this->assertInstanceOf($expectedBlockClass, $attachmentBlocks[0]);
+            $this->assertSame($expectedSourceType, $attachmentBlocks[0]->sourceType);
 
             return true;
         }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
@@ -566,11 +740,11 @@ class AiFoundationFacadeTest extends Unit
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
         $mockProvider->method('systemPrompt')->willReturnSelf();
-        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages): bool {
-            $attachments = $messages[0]->getAttachments();
-            $this->assertCount(2, $attachments);
-            $this->assertSame(AttachmentType::DOCUMENT, $attachments[0]->type);
-            $this->assertSame(AttachmentType::IMAGE, $attachments[1]->type);
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (Message $message): bool {
+            $attachmentBlocks = $this->extractAttachmentBlocks($message);
+            $this->assertCount(2, $attachmentBlocks);
+            $this->assertInstanceOf(FileContent::class, $attachmentBlocks[0]);
+            $this->assertInstanceOf(ImageContent::class, $attachmentBlocks[1]);
 
             return true;
         }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
@@ -582,10 +756,10 @@ class AiFoundationFacadeTest extends Unit
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
         $mockProvider->method('systemPrompt')->willReturnSelf();
-        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (array $messages): bool {
-            $attachments = $messages[0]->getAttachments();
-            $this->assertCount(1, $attachments);
-            $this->assertSame('image/png', $attachments[0]->mediaType);
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (Message $message): bool {
+            $attachmentBlocks = $this->extractAttachmentBlocks($message);
+            $this->assertCount(1, $attachmentBlocks);
+            $this->assertSame('image/png', $attachmentBlocks[0]->mediaType);
 
             return true;
         }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
@@ -598,30 +772,83 @@ class AiFoundationFacadeTest extends Unit
         $mockProvider = $this->createMock(AIProviderInterface::class);
         $mockProvider->method('systemPrompt')->willReturnSelf();
 
-        $attachment = new Attachment(type: AttachmentType::IMAGE, content: 'https://example.com/result.png', contentType: AttachmentContentType::URL, mediaType: 'image/png');
-        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
-        $assistantMessage->addAttachment($attachment);
+        $assistantMessage = new AssistantMessage([
+            new TextContent(static::TEST_ASSISTANT_RESPONSE),
+            new ImageContent('https://example.com/result.png', SourceType::URL, 'image/png'),
+        ]);
         $mockProvider->method('chat')->willReturn($assistantMessage);
 
         return $mockProvider;
     }
 
-    protected function createMockProviderReturningUsage(): AIProviderInterface
+    protected function createMockProviderReturningIdSourceAttachment(): AIProviderInterface
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
 
-        $mockProvider->expects($this->once())
-            ->method('systemPrompt')
-            ->with(static::TEST_SYSTEM_PROMPT)
-            ->willReturnSelf();
+        $assistantMessage = new AssistantMessage([
+            new TextContent(static::TEST_ASSISTANT_RESPONSE),
+            new ImageContent('file-abc123', SourceType::ID, 'image/png'),
+        ]);
+        $mockProvider->method('chat')->willReturn($assistantMessage);
 
-        $usage = new Usage(inputTokens: 100, outputTokens: 50);
-        $assistantMessage = new AssistantMessage(static::TEST_ASSISTANT_RESPONSE);
-        $this->setMessageUsage($assistantMessage, $usage);
+        return $mockProvider;
+    }
 
-        $mockProvider->expects($this->once())
-            ->method('chat')
-            ->willReturn($assistantMessage);
+    protected function createMockProviderReturningReasoningAndText(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+
+        $assistantMessage = new AssistantMessage([
+            new ReasoningContent('Step 1: parse input.'),
+            new ReasoningContent('Step 2: pick branch.'),
+            new TextContent(static::TEST_ASSISTANT_RESPONSE),
+        ]);
+        $mockProvider->method('chat')->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderReturningReasoningOnly(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+
+        $assistantMessage = new AssistantMessage([
+            new ReasoningContent('Internal scratch pad only.'),
+        ]);
+        $mockProvider->method('chat')->willReturn($assistantMessage);
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderExpectingFileContentWithFilename(string $expectedFilename): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->expects($this->once())->method('chat')->with($this->callback(function (Message $message) use ($expectedFilename): bool {
+            $attachmentBlocks = $this->extractAttachmentBlocks($message);
+            $this->assertCount(1, $attachmentBlocks);
+            $this->assertInstanceOf(FileContent::class, $attachmentBlocks[0]);
+            $this->assertSame($expectedFilename, $attachmentBlocks[0]->filename);
+
+            return true;
+        }))->willReturn(new AssistantMessage(static::TEST_ASSISTANT_RESPONSE));
+
+        return $mockProvider;
+    }
+
+    protected function createMockProviderReturningFileContentWithFilename(): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+
+        $assistantMessage = new AssistantMessage([
+            new TextContent(static::TEST_ASSISTANT_RESPONSE),
+            new FileContent('https://example.com/user-manual.pdf', SourceType::URL, 'application/pdf', 'user-manual.pdf'),
+        ]);
+        $mockProvider->method('chat')->willReturn($assistantMessage);
 
         return $mockProvider;
     }
@@ -667,8 +894,23 @@ class AiFoundationFacadeTest extends Unit
     protected function setMessageUsage(Message $message, Usage $usage): void
     {
         $reflectionProperty = new ReflectionProperty($message, 'usage');
-        $reflectionProperty->setAccessible(true);
         $reflectionProperty->setValue($message, $usage);
+    }
+
+    /**
+     * @return array<\NeuronAI\Chat\Messages\ContentBlocks\ImageContent|\NeuronAI\Chat\Messages\ContentBlocks\FileContent>
+     */
+    protected function extractAttachmentBlocks(Message $message): array
+    {
+        $attachmentBlocks = [];
+
+        foreach ($message->getContentBlocks() as $contentBlock) {
+            if ($contentBlock instanceof ImageContent || $contentBlock instanceof FileContent) {
+                $attachmentBlocks[] = $contentBlock;
+            }
+        }
+
+        return $attachmentBlocks;
     }
 
     protected function assertAttachmentMatchesExpectedValues(AttachmentTransfer $attachmentTransfer): void
@@ -712,6 +954,9 @@ class AiFoundationFacadeTest extends Unit
         return $this->tester->getFacade();
     }
 
+    /**
+     * @param array<string, mixed> $providerConfig
+     */
     protected function createFacadeWithMockedProviderResolverAndConfig(
         ProviderResolverInterface $mockProviderResolver,
         string $aiEngineName,
@@ -770,9 +1015,10 @@ class AiFoundationFacadeTest extends Unit
 
     protected function createNeuronAiMessageMapper(): NeuronAiMessageMapper
     {
-        $transferJsonSchemaMapper = $this->createTransferJsonSchemaMapper();
-
-        return new NeuronAiMessageMapper($transferJsonSchemaMapper);
+        return new NeuronAiMessageMapper(
+            $this->createTransferJsonSchemaMapper(),
+            new MessageContentExtractor(),
+        );
     }
 
     protected function createTransferJsonSchemaMapper(): TransferJsonSchemaMapperInterface

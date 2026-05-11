@@ -154,6 +154,16 @@ interface AiFoundationConstants
 
     /**
      * Specification:
+     * - Defines the attachment content type for provider-hosted file references (e.g. OpenAI/Anthropic Files API ids).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ATTACHMENT_CONTENT_TYPE_ID = 'id';
+
+    /**
+     * Specification:
      * - Defines the message type for user messages in chat history.
      *
      * @api

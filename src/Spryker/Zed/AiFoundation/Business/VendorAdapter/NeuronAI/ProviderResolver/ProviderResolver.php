@@ -10,12 +10,15 @@ declare(strict_types=1);
 namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ProviderResolver;
 
 use Aws\BedrockRuntime\BedrockRuntimeClient;
+use Aws\Token\BedrockTokenProvider;
+use Aws\Token\TokenSource;
+use NeuronAI\HttpClient\GuzzleHttpClient;
+use NeuronAI\HttpClient\HttpClientInterface;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Providers\Anthropic\Anthropic;
 use NeuronAI\Providers\AWS\BedrockRuntime;
 use NeuronAI\Providers\Deepseek\Deepseek;
 use NeuronAI\Providers\Gemini\Gemini;
-use NeuronAI\Providers\HttpClientOptions;
 use NeuronAI\Providers\HuggingFace\HuggingFace;
 use NeuronAI\Providers\Mistral\Mistral;
 use NeuronAI\Providers\Ollama\Ollama;
@@ -110,6 +113,10 @@ class ProviderResolver implements ProviderResolverInterface
         self::PROVIDER_AZURE_OPEN_AI,
         self::PROVIDER_GEMINI,
     ];
+
+    protected const float DEFAULT_HTTP_CLIENT_TIMEOUT = 60.0;
+
+    protected const float DEFAULT_HTTP_CLIENT_CONNECT_TIMEOUT = 10.0;
 
     /**
      * @param array<string, mixed> $config
@@ -215,6 +222,14 @@ class ProviderResolver implements ProviderResolverInterface
             $awsConfig['credentials'] = $bedrockRuntimeClientConfig['credentials'];
         }
 
+        if (isset($bedrockRuntimeClientConfig['token']) && is_string($bedrockRuntimeClientConfig['token'])) {
+            $awsConfig['token'] = BedrockTokenProvider::fromTokenValue(
+                $bedrockRuntimeClientConfig['token'],
+                TokenSource::BEARER_SERVICE_ENV_VARS,
+            );
+            $awsConfig['auth_scheme_preference'] = [BedrockTokenProvider::BEARER_AUTH];
+        }
+
         return $awsConfig;
     }
 
@@ -230,16 +245,17 @@ class ProviderResolver implements ProviderResolverInterface
         }
 
         $httpClientOptionsConfig = $config['httpOptions'] ?? [];
+        unset($config['httpOptions']);
 
         if (count($httpClientOptionsConfig) === 0) {
             return $config;
         }
 
-        if (!$this->shouldCreateHttpClientOptions($httpClientOptionsConfig)) {
+        if (!$this->shouldCreateHttpClient($httpClientOptionsConfig)) {
             return $config;
         }
 
-        $config['httpOptions'] = $this->createHttpClientOptions($httpClientOptionsConfig);
+        $config['httpClient'] = $this->createHttpClient($httpClientOptionsConfig);
 
         return $config;
     }
@@ -247,7 +263,7 @@ class ProviderResolver implements ProviderResolverInterface
     /**
      * @param array<string, mixed> $config
      */
-    protected function shouldCreateHttpClientOptions(array $config): bool
+    protected function shouldCreateHttpClient(array $config): bool
     {
         return isset($config['timeout'])
             || isset($config['connectTimeout'])
@@ -258,12 +274,12 @@ class ProviderResolver implements ProviderResolverInterface
     /**
      * @param array<string, mixed> $config
      */
-    protected function createHttpClientOptions(array $config): HttpClientOptions
+    protected function createHttpClient(array $config): HttpClientInterface
     {
-        return new HttpClientOptions(
-            timeout: $config['timeout'] ?? null,
-            connectTimeout: $config['connectTimeout'] ?? null,
-            headers: $config['headers'] ?? null,
+        return new GuzzleHttpClient(
+            customHeaders: $config['headers'] ?? [],
+            timeout: (float)($config['timeout'] ?? static::DEFAULT_HTTP_CLIENT_TIMEOUT),
+            connectTimeout: (float)($config['connectTimeout'] ?? static::DEFAULT_HTTP_CLIENT_CONNECT_TIMEOUT),
             handler: $config['handler'] ?? null,
         );
     }

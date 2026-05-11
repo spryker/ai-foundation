@@ -30,7 +30,10 @@ use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\DbChatHistoryResolver;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractor;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractorInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
@@ -73,11 +76,17 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
         return new ProviderResolver();
     }
 
-    public function createNeuronAiMessageMapper(): NeuronAiMessageMapper
+    public function createNeuronAiMessageMapper(): NeuronAiMessageMapperInterface
     {
         return new NeuronAiMessageMapper(
             transferJsonSchemaMapper: $this->createTransferToJsonSchemaMapper(),
+            messageContentExtractor: $this->createMessageContentExtractor(),
         );
+    }
+
+    public function createMessageContentExtractor(): MessageContentExtractorInterface
+    {
+        return new MessageContentExtractor();
     }
 
     public function createNeuronAiToolMapper(): NeuronAiToolMapperInterface

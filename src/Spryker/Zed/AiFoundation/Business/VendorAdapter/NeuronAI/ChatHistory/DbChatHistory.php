@@ -10,10 +10,10 @@ namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistory;
 use Generated\Shared\Transfer\ConversationHistoryConditionsTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
+use NeuronAI\Chat\Enums\ContentBlockType;
+use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\History\AbstractChatHistory;
-use NeuronAI\Chat\History\ChatHistoryInterface;
-use Spryker\Shared\AiFoundation\AiFoundationConstants;
-use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface;
 
@@ -21,10 +21,20 @@ class DbChatHistory extends AbstractChatHistory
 {
     protected const int DEFAULT_MAX_ATTACHMENT_STORAGE_SIZE_IN_BYTES = 0;
 
+    /**
+     * @var array<\NeuronAI\Chat\Enums\ContentBlockType>
+     */
+    protected const array BINARY_CONTENT_BLOCK_TYPES = [
+        ContentBlockType::IMAGE,
+        ContentBlockType::FILE,
+        ContentBlockType::AUDIO,
+        ContentBlockType::VIDEO,
+    ];
+
     public function __construct(
         protected AiFoundationEntityManagerInterface $entityManager,
         protected AiFoundationRepositoryInterface $repository,
-        protected NeuronAiMessageMapper $messageMapper,
+        protected NeuronAiMessageMapperInterface $messageMapper,
         protected string $conversationReference,
         int $contextWindow = 50000,
         protected int $maxAttachmentStorageSizeInBytes = self::DEFAULT_MAX_ATTACHMENT_STORAGE_SIZE_IN_BYTES,
@@ -36,12 +46,10 @@ class DbChatHistory extends AbstractChatHistory
 
     /**
      * @param array<\NeuronAI\Chat\Messages\Message> $messages
-     *
-     * @return \NeuronAI\Chat\History\ChatHistoryInterface
      */
-    public function setMessages(array $messages): ChatHistoryInterface
+    protected function setMessages(array $messages): void
     {
-        $messagesArray = array_map(fn ($message): array => $message->jsonSerialize(), $this->getMessages());
+        $messagesArray = array_map(fn ($message): array => $message->jsonSerialize(), $messages);
         $originalMessages = json_encode($this->sanitizeMessagesForStorage($messagesArray));
 
         $conversationHistoryTransfer = (new ConversationHistoryTransfer())
@@ -49,8 +57,6 @@ class DbChatHistory extends AbstractChatHistory
             ->setOriginalMessages($originalMessages !== false ? $originalMessages : '[]');
 
         $this->entityManager->saveConversationHistory($conversationHistoryTransfer);
-
-        return $this;
     }
 
     /**
@@ -61,31 +67,31 @@ class DbChatHistory extends AbstractChatHistory
     protected function sanitizeMessagesForStorage(array $messages): array
     {
         return array_map(function (array $message): array {
-            if (empty($message['attachments'])) {
+            if (empty($message['content']) || !is_array($message['content'])) {
                 return $message;
             }
 
-            $message['attachments'] = array_values(
+            $message['content'] = array_values(
                 array_filter(
-                    $message['attachments'],
-                    fn (array $attachment): bool => $this->isAttachmentStorable($attachment),
+                    $message['content'],
+                    fn ($contentBlock): bool => !is_array($contentBlock) || $this->isContentBlockStorable($contentBlock),
                 ),
             );
-
-            if ($message['attachments'] === []) {
-                unset($message['attachments']);
-            }
 
             return $message;
         }, $messages);
     }
 
     /**
-     * @param array<string, mixed> $attachment
+     * @param array<string, mixed> $contentBlock
      */
-    protected function isAttachmentStorable(array $attachment): bool
+    protected function isContentBlockStorable(array $contentBlock): bool
     {
-        if (($attachment['content_type'] ?? '') !== AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64) {
+        if (!in_array($contentBlock['type'] ?? null, static::BINARY_CONTENT_BLOCK_TYPES, true)) {
+            return true;
+        }
+
+        if (($contentBlock['source_type'] ?? null) !== SourceType::BASE64) {
             return true;
         }
 
@@ -93,10 +99,10 @@ class DbChatHistory extends AbstractChatHistory
             return false;
         }
 
-        return strlen((string)($attachment['content'] ?? '')) <= $this->maxAttachmentStorageSizeInBytes;
+        return strlen((string)($contentBlock['content'] ?? '')) <= $this->maxAttachmentStorageSizeInBytes;
     }
 
-    protected function clear(): ChatHistoryInterface
+    protected function clear(): void
     {
         $criteria = (new ConversationHistoryCriteriaTransfer())
             ->setConversationHistoryConditions(
@@ -105,8 +111,6 @@ class DbChatHistory extends AbstractChatHistory
             );
 
         $this->entityManager->deleteConversationHistory($criteria);
-
-        return $this;
     }
 
     protected function loadHistoryFromDatabase(): void

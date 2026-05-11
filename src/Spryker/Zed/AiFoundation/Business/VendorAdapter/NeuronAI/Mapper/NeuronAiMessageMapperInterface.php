@@ -18,6 +18,15 @@ interface NeuronAiMessageMapperInterface
 
     public function mapProviderResponseToPromptResponse(Message $message): PromptResponseTransfer;
 
+    public function mapProviderMessageToPromptMessage(Message $message): PromptMessageTransfer;
+
+    /**
+     * @param array<\NeuronAI\Chat\Messages\Message> $messages
+     *
+     * @return array<\Generated\Shared\Transfer\PromptMessageTransfer>
+     */
+    public function mapProviderMessagesToPromptMessages(array $messages): array;
+
     /**
      * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
      *

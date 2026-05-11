@@ -31,6 +31,7 @@
         <property name="attachments" type="Attachment[]" singular="attachment"/>
         <property name="usage" type="Usage" description="Token usage for this message (input/output tokens)"/>
         <property name="toolInvocations" type="ToolInvocation[]" singular="toolInvocation" description="Tool invocations associated with this message (for tool_call and tool_result types)"/>
+        <property name="reasoning" type="string" description="Model reasoning / chain-of-thought emitted alongside the final answer; null when the provider does not return reasoning blocks."/>
     </transfer>
 
     <transfer name="Attachment" strict="true">
@@ -38,6 +39,7 @@
         <property name="content" type="string"/>
         <property name="contentType" type="string"/>
         <property name="mediaType" type="string"/>
+        <property name="filename" type="string" description="Original filename for document attachments; only set for type=document and only when the provider/caller carries it."/>
     </transfer>
 
     <transfer name="ToolInvocation" strict="true">

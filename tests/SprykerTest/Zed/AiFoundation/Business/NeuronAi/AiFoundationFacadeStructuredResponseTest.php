@@ -19,6 +19,7 @@ use Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractor;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
@@ -458,9 +459,10 @@ class AiFoundationFacadeStructuredResponseTest extends Unit
 
     protected function createNeuronAiMessageMapper(): NeuronAiMessageMapper
     {
-        $transferJsonSchemaMapper = $this->createTransferJsonSchemaMapper();
-
-        return new NeuronAiMessageMapper($transferJsonSchemaMapper);
+        return new NeuronAiMessageMapper(
+            $this->createTransferJsonSchemaMapper(),
+            new MessageContentExtractor(),
+        );
     }
 
     protected function createTransferJsonSchemaMapper(): TransferJsonSchemaMapperInterface

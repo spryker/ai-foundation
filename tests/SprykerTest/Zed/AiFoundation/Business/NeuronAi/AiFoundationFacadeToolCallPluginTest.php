@@ -23,6 +23,7 @@ use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractor;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapper;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiToolMapperInterface;
@@ -417,7 +418,7 @@ class AiFoundationFacadeToolCallPluginTest extends Unit
 
     protected function createNeuronAiMessageMapper(): NeuronAiMessageMapper
     {
-        return new NeuronAiMessageMapper(new TransferJsonSchemaMapper());
+        return new NeuronAiMessageMapper(new TransferJsonSchemaMapper(), new MessageContentExtractor());
     }
 
     protected function createNeuronAiToolMapper(): NeuronAiToolMapperInterface

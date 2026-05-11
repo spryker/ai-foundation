@@ -14,50 +14,47 @@ use Generated\Shared\Transfer\PromptResponseTransfer;
 use Generated\Shared\Transfer\ToolInvocationTransfer;
 use Generated\Shared\Transfer\UsageTransfer;
 use InvalidArgumentException;
-use NeuronAI\Chat\Attachments\Attachment;
-use NeuronAI\Chat\Enums\AttachmentContentType;
-use NeuronAI\Chat\Enums\AttachmentType;
+use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\ContentBlocks\ContentBlockInterface;
+use NeuronAI\Chat\Messages\ContentBlocks\FileContent;
+use NeuronAI\Chat\Messages\ContentBlocks\ImageContent;
+use NeuronAI\Chat\Messages\ContentBlocks\TextContent;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\ToolCallMessage;
-use NeuronAI\Chat\Messages\ToolCallResultMessage;
+use NeuronAI\Chat\Messages\ToolResultMessage;
 use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Chat\Messages\UserMessage;
 use ReflectionClass;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
+use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Extractor\MessageContentExtractorInterface;
 
-class NeuronAiMessageMapper
+class NeuronAiMessageMapper implements NeuronAiMessageMapperInterface
 {
     public function __construct(
         protected TransferJsonSchemaMapperInterface $transferJsonSchemaMapper,
+        protected MessageContentExtractorInterface $messageContentExtractor,
     ) {
     }
 
     public function mapPromptMessageToProviderMessage(PromptMessageTransfer $promptMessageTransfer): Message
     {
-        $content = $promptMessageTransfer->getContent() ?? $promptMessageTransfer->getContentData();
+        $contentBlocks = $this->buildContentBlocksFromPromptMessage($promptMessageTransfer);
 
-        $userMessage = new UserMessage($content);
-
-        foreach ($promptMessageTransfer->getAttachments() as $attachmentTransfer) {
-            $attachment = $this->mapAttachmentTransferToAttachment($attachmentTransfer);
-            $userMessage->addAttachment($attachment);
-        }
-
-        return $userMessage;
+        return new UserMessage($contentBlocks);
     }
 
     public function mapProviderResponseToPromptResponse(Message $message): PromptResponseTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
-            ->setContent($message->getContent())
+            ->setContent($this->getNormalizedContent($message))
+            ->setReasoning($this->messageContentExtractor->extractReasoning($message))
             ->setUsage($this->mapUsageToUsageTransfer($message->getUsage()));
 
-        foreach ($message->getAttachments() as $attachment) {
-            $attachmentTransfer = $this->mapAttachmentToAttachmentTransfer($attachment);
-            $promptMessageTransfer->addAttachment($attachmentTransfer);
+        foreach ($this->extractAttachmentBlocks($message) as $contentBlock) {
+            $promptMessageTransfer->addAttachment($this->mapContentBlockToAttachmentTransfer($contentBlock));
         }
 
         return (new PromptResponseTransfer())
@@ -68,15 +65,15 @@ class NeuronAiMessageMapper
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
             ->setType($this->mapMessageRole($message))
-            ->setContent($message->getContent())
+            ->setContent($this->getNormalizedContent($message))
+            ->setReasoning($this->messageContentExtractor->extractReasoning($message))
             ->setUsage($this->mapUsageToUsageTransfer($message->getUsage()));
 
-        foreach ($message->getAttachments() as $attachment) {
-            $attachmentTransfer = $this->mapAttachmentToAttachmentTransfer($attachment);
-            $promptMessageTransfer->addAttachment($attachmentTransfer);
+        foreach ($this->extractAttachmentBlocks($message) as $contentBlock) {
+            $promptMessageTransfer->addAttachment($this->mapContentBlockToAttachmentTransfer($contentBlock));
         }
 
-        if ($message instanceof ToolCallMessage || $message instanceof ToolCallResultMessage) {
+        if ($message instanceof ToolCallMessage || $message instanceof ToolResultMessage) {
             $this->mapToolsToPromptMessage($message, $promptMessageTransfer);
         }
 
@@ -99,6 +96,47 @@ class NeuronAiMessageMapper
         return $promptMessages;
     }
 
+    /**
+     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
+     *
+     * @return array<string, mixed>
+     */
+    public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array
+    {
+        return $this->transferJsonSchemaMapper->buildJsonSchema($structuredResponseTransfer);
+    }
+
+    public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer
+    {
+        $messageContent = $this->messageContentExtractor->extractFinalText($message) ?? '';
+        $content = $this->transferJsonSchemaMapper->extractJsonFromText($messageContent);
+
+        $structuredResponseTransfer->fromArray($content, true);
+
+        $this->assertTransferPropertiesAreFilled($structuredResponseTransfer, $messageContent);
+
+        return $structuredResponseTransfer;
+    }
+
+    protected function getNormalizedContent(Message $message): ?string
+    {
+        $content = $this->messageContentExtractor->extractFinalText($message);
+
+        if ($content === null) {
+            return null;
+        }
+
+        $extracted = $this->transferJsonSchemaMapper->extractJsonFromText($content);
+
+        if ($extracted === []) {
+            return $content;
+        }
+
+        $encoded = json_encode($extracted, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return $encoded === false ? $content : $encoded;
+    }
+
     protected function mapUsageToUsageTransfer(?Usage $usage): ?UsageTransfer
     {
         if ($usage === null) {
@@ -113,10 +151,10 @@ class NeuronAiMessageMapper
     protected function mapMessageRole(Message $message): string
     {
         // Specific subtypes must be checked before their parent classes:
-        // ToolCallMessage extends AssistantMessage, ToolCallResultMessage extends UserMessage
+        // ToolCallMessage extends AssistantMessage, ToolResultMessage extends UserMessage
         return match (true) {
             $message instanceof ToolCallMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_CALL,
-            $message instanceof ToolCallResultMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_RESULT,
+            $message instanceof ToolResultMessage => AiFoundationConstants::MESSAGE_TYPE_TOOL_RESULT,
             $message instanceof UserMessage => AiFoundationConstants::MESSAGE_TYPE_USER,
             $message instanceof AssistantMessage => AiFoundationConstants::MESSAGE_TYPE_ASSISTANT,
             default => AiFoundationConstants::MESSAGE_TYPE_ASSISTANT,
@@ -124,7 +162,7 @@ class NeuronAiMessageMapper
     }
 
     protected function mapToolsToPromptMessage(
-        ToolCallMessage|ToolCallResultMessage $message,
+        ToolCallMessage|ToolResultMessage $message,
         PromptMessageTransfer $promptMessageTransfer,
     ): void {
         foreach ($message->getTools() as $tool) {
@@ -132,7 +170,7 @@ class NeuronAiMessageMapper
                 ->setName($tool->getName())
                 ->setArguments($tool->getInputs());
 
-            if ($message instanceof ToolCallResultMessage) {
+            if ($message instanceof ToolResultMessage) {
                 $toolInvocationTransfer->setResult($tool->getResult());
             }
 
@@ -140,85 +178,91 @@ class NeuronAiMessageMapper
         }
     }
 
-    protected function mapAttachmentTransferToAttachment(AttachmentTransfer $attachmentTransfer): Attachment
+    /**
+     * @return array<\NeuronAI\Chat\Messages\ContentBlocks\ContentBlockInterface>
+     */
+    protected function buildContentBlocksFromPromptMessage(PromptMessageTransfer $promptMessageTransfer): array
     {
-        $type = $this->mapAttachmentType($attachmentTransfer->getTypeOrFail());
-        $contentType = $this->mapAttachmentContentType($attachmentTransfer->getContentTypeOrFail());
+        $contentBlocks = [];
 
-        return new Attachment(
-            type: $type,
-            content: $attachmentTransfer->getContentOrFail(),
-            contentType: $contentType,
-            mediaType: $attachmentTransfer->getMediaType(),
-        );
-    }
+        $textContent = $promptMessageTransfer->getContent() ?? $promptMessageTransfer->getContentData();
 
-    protected function mapAttachmentToAttachmentTransfer(Attachment $attachment): AttachmentTransfer
-    {
-        $type = $this->mapAttachmentTypeToConstant($attachment->type);
-        $contentType = $this->mapAttachmentContentTypeToConstant($attachment->contentType);
+        if (is_string($textContent) && $textContent !== '') {
+            $contentBlocks[] = new TextContent($textContent);
+        }
 
-        return (new AttachmentTransfer())
-            ->setType($type)
-            ->setContent($attachment->content)
-            ->setContentType($contentType)
-            ->setMediaType($attachment->mediaType);
-    }
+        foreach ($promptMessageTransfer->getAttachments() as $attachmentTransfer) {
+            $contentBlocks[] = $this->mapAttachmentTransferToContentBlock($attachmentTransfer);
+        }
 
-    protected function mapAttachmentType(string $type): AttachmentType
-    {
-        return match ($type) {
-            AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT => AttachmentType::DOCUMENT,
-            AiFoundationConstants::ATTACHMENT_TYPE_IMAGE => AttachmentType::IMAGE,
-            default => AttachmentType::DOCUMENT,
-        };
-    }
-
-    protected function mapAttachmentContentType(string $contentType): AttachmentContentType
-    {
-        return match ($contentType) {
-            AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL => AttachmentContentType::URL,
-            AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64 => AttachmentContentType::BASE64,
-            default => AttachmentContentType::URL,
-        };
-    }
-
-    protected function mapAttachmentTypeToConstant(AttachmentType $type): string
-    {
-        return match ($type) {
-            AttachmentType::DOCUMENT => AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT,
-            AttachmentType::IMAGE => AiFoundationConstants::ATTACHMENT_TYPE_IMAGE,
-        };
-    }
-
-    protected function mapAttachmentContentTypeToConstant(AttachmentContentType $contentType): string
-    {
-        return match ($contentType) {
-            AttachmentContentType::URL => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
-            AttachmentContentType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
-            default => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
-        };
+        return $contentBlocks;
     }
 
     /**
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
-     *
-     * @return array<string, mixed>
+     * @return array<\NeuronAI\Chat\Messages\ContentBlocks\ImageContent|\NeuronAI\Chat\Messages\ContentBlocks\FileContent>
      */
-    public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array
+    protected function extractAttachmentBlocks(Message $message): array
     {
-        return $this->transferJsonSchemaMapper->buildJsonSchema($structuredResponseTransfer);
+        $attachmentBlocks = [];
+
+        foreach ($message->getContentBlocks() as $contentBlock) {
+            if ($contentBlock instanceof ImageContent || $contentBlock instanceof FileContent) {
+                $attachmentBlocks[] = $contentBlock;
+            }
+        }
+
+        return $attachmentBlocks;
     }
 
-    public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer
+    protected function mapAttachmentTransferToContentBlock(AttachmentTransfer $attachmentTransfer): ContentBlockInterface
     {
-        $content = $this->transferJsonSchemaMapper->extractJsonFromText($message->getContent());
+        $type = $attachmentTransfer->getTypeOrFail();
+        $sourceType = $this->resolveSourceTypeFromAttachmentContentType($attachmentTransfer->getContentTypeOrFail());
+        $content = $attachmentTransfer->getContentOrFail();
+        $mediaType = $attachmentTransfer->getMediaType();
 
-        $structuredResponseTransfer->fromArray($content, true);
+        if ($type === AiFoundationConstants::ATTACHMENT_TYPE_IMAGE) {
+            return new ImageContent($content, $sourceType, $mediaType);
+        }
 
-        $this->assertTransferPropertiesAreFilled($structuredResponseTransfer, $message->getContent());
+        return new FileContent($content, $sourceType, $mediaType, $attachmentTransfer->getFilename());
+    }
 
-        return $structuredResponseTransfer;
+    protected function mapContentBlockToAttachmentTransfer(ImageContent|FileContent $contentBlock): AttachmentTransfer
+    {
+        $attachmentTransfer = (new AttachmentTransfer())
+            ->setContent($contentBlock->content)
+            ->setContentType($this->resolveAttachmentContentTypeFromSourceType($contentBlock->sourceType))
+            ->setMediaType($contentBlock->mediaType);
+
+        if ($contentBlock instanceof ImageContent) {
+            return $attachmentTransfer->setType(AiFoundationConstants::ATTACHMENT_TYPE_IMAGE);
+        }
+
+        return $attachmentTransfer
+            ->setType(AiFoundationConstants::ATTACHMENT_TYPE_DOCUMENT)
+            ->setFilename($contentBlock->filename);
+    }
+
+    protected function resolveSourceTypeFromAttachmentContentType(string $contentType): SourceType
+    {
+        return match ($contentType) {
+            AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64 => SourceType::BASE64,
+            AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL => SourceType::URL,
+            AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_ID => SourceType::ID,
+            default => throw new InvalidArgumentException(
+                sprintf('Unsupported attachment content type "%s".', $contentType),
+            ),
+        };
+    }
+
+    protected function resolveAttachmentContentTypeFromSourceType(SourceType $sourceType): string
+    {
+        return match ($sourceType) {
+            SourceType::BASE64 => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_BASE64,
+            SourceType::URL => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_URL,
+            SourceType::ID => AiFoundationConstants::ATTACHMENT_CONTENT_TYPE_ID,
+        };
     }
 
     protected function assertTransferPropertiesAreFilled(AbstractTransfer $transfer, string $responseContent): void
