@@ -10,6 +10,7 @@ namespace Spryker\Zed\AiFoundation\Persistence;
 use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCriteriaTransfer;
+use Generated\Shared\Transfer\AiPricingBreakdownTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
@@ -34,6 +35,8 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
     protected const string SQL_SUCCESS_COUNT = 'SUM(CASE WHEN %s = true THEN 1 ELSE 0 END)';
 
     protected const string SQL_AVERAGE_INFERENCE_TIME_MS = 'COALESCE(AVG(%s), 0)';
+
+    protected const string SQL_SUM_TOKENS = 'COALESCE(SUM(%s), 0)';
 
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
@@ -149,6 +152,62 @@ class AiFoundationRepository extends AbstractRepository implements AiFoundationR
                 $row,
                 $aiInteractionLogAggregationTransfer,
             );
+    }
+
+    /**
+     * @return array<\Generated\Shared\Transfer\AiPricingBreakdownTransfer>
+     */
+    public function getAiInteractionLogPricingBreakdown(
+        AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
+    ): array {
+        if ($aiInteractionLogCriteriaTransfer->getAiInteractionLogConditions() === null) {
+            return [];
+        }
+
+        $aiInteractionLogQuery = $this->getFactory()->createAiInteractionLogQuery();
+        $aiInteractionLogQuery = $this->applyAiInteractionLogFilters(
+            $aiInteractionLogQuery,
+            $aiInteractionLogCriteriaTransfer,
+        );
+
+        $aiInteractionLogQuery
+            ->withColumn(static::SQL_TOTAL_REQUESTS, AiInteractionLogMapper::VIRTUAL_COLUMN_REQUEST_COUNT)
+            ->withColumn(
+                sprintf(static::SQL_SUM_TOKENS, SpyAiInteractionLogTableMap::COL_INPUT_TOKENS),
+                AiInteractionLogMapper::VIRTUAL_COLUMN_INPUT_TOKENS,
+            )
+            ->withColumn(
+                sprintf(static::SQL_SUM_TOKENS, SpyAiInteractionLogTableMap::COL_OUTPUT_TOKENS),
+                AiInteractionLogMapper::VIRTUAL_COLUMN_OUTPUT_TOKENS,
+            )
+            ->withColumn(
+                sprintf(static::SQL_TOTAL_TOKENS, SpyAiInteractionLogTableMap::COL_INPUT_TOKENS, SpyAiInteractionLogTableMap::COL_OUTPUT_TOKENS),
+                AiInteractionLogMapper::VIRTUAL_COLUMN_TOTAL_TOKENS,
+            )
+            ->groupBy(SpyAiInteractionLogTableMap::COL_PROVIDER)
+            ->groupBy(SpyAiInteractionLogTableMap::COL_MODEL);
+
+        /** @var \Propel\Runtime\Collection\ArrayCollection<array<string, mixed>> $rows */
+        $rows = $aiInteractionLogQuery->select([
+            SpyAiInteractionLogTableMap::COL_PROVIDER,
+            SpyAiInteractionLogTableMap::COL_MODEL,
+            AiInteractionLogMapper::VIRTUAL_COLUMN_REQUEST_COUNT,
+            AiInteractionLogMapper::VIRTUAL_COLUMN_INPUT_TOKENS,
+            AiInteractionLogMapper::VIRTUAL_COLUMN_OUTPUT_TOKENS,
+            AiInteractionLogMapper::VIRTUAL_COLUMN_TOTAL_TOKENS,
+        ])->find();
+
+        $aiInteractionLogMapper = $this->getFactory()->createAiInteractionLogMapper();
+        $aiPricingBreakdownTransfers = [];
+
+        foreach ($rows as $row) {
+            $aiPricingBreakdownTransfers[] = $aiInteractionLogMapper->mapPricingBreakdownRowToAiPricingBreakdownTransfer(
+                $row,
+                new AiPricingBreakdownTransfer(),
+            );
+        }
+
+        return $aiPricingBreakdownTransfers;
     }
 
     protected function applyConversationHistoryFilters(

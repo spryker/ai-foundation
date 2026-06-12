@@ -12,6 +12,7 @@ namespace Spryker\Zed\AiFoundation\Persistence\Propel\Mapper;
 use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionTransfer;
 use Generated\Shared\Transfer\AiInteractionLogTransfer;
+use Generated\Shared\Transfer\AiPricingBreakdownTransfer;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 use Propel\Runtime\Collection\ObjectCollection;
 
@@ -55,4 +56,14 @@ interface AiInteractionLogMapperInterface
         array $row,
         AiInteractionLogAggregationTransfer $aiInteractionLogAggregationTransfer,
     ): AiInteractionLogAggregationTransfer;
+
+    /**
+     * Maps a single grouped (provider, model) aggregation query result row to an AiPricingBreakdown transfer.
+     *
+     * @param array<string, mixed> $row
+     */
+    public function mapPricingBreakdownRowToAiPricingBreakdownTransfer(
+        array $row,
+        AiPricingBreakdownTransfer $aiPricingBreakdownTransfer,
+    ): AiPricingBreakdownTransfer;
 }

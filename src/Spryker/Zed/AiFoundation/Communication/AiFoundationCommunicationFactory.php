@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace Spryker\Zed\AiFoundation\Communication;
 
+use Spryker\Service\AiFoundation\AiFoundationServiceInterface;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
+use Spryker\Zed\AiFoundation\Communication\Cost\AiInteractionCostFormatter;
+use Spryker\Zed\AiFoundation\Communication\Cost\AiInteractionCostFormatterInterface;
 use Spryker\Zed\AiFoundation\Communication\Form\AiInteractionLogTableFilterForm;
 use Spryker\Zed\AiFoundation\Communication\Form\DataProvider\AiInteractionLogTableFilterFormDataProvider;
 use Spryker\Zed\AiFoundation\Communication\Log\AiInteractionDbHandler;
@@ -83,7 +86,20 @@ class AiFoundationCommunicationFactory extends AbstractCommunicationFactory
 
     public function createAiInteractionLogTable(): AiInteractionLogTable
     {
-        return new AiInteractionLogTable();
+        return new AiInteractionLogTable(
+            $this->getFacade()->getAiPriceMap(),
+            $this->createAiInteractionCostFormatter(),
+        );
+    }
+
+    public function createAiInteractionCostFormatter(): AiInteractionCostFormatterInterface
+    {
+        return new AiInteractionCostFormatter($this->getAiFoundationService(), $this->getConfig());
+    }
+
+    public function getAiFoundationService(): AiFoundationServiceInterface
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::SERVICE_AI_FOUNDATION);
     }
 
     /**

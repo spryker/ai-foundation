@@ -3,7 +3,10 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
+require('../../scss/ai-pricing-popover.scss');
+
 const bootstrap = require('bootstrap');
+const { AiPricingInfoPopover } = require('./ai-pricing-popover');
 
 const AJAX_HEADERS = { 'X-Requested-With': 'XMLHttpRequest' };
 const AI_INTERACTION_LOG_STATS_BASE_PATH = '/ai-foundation/ai-interaction-log/stats';
@@ -55,6 +58,9 @@ async function loadStats() {
 
     try {
         statsCards.innerHTML = sanitizeHTML(await fetchHtml(`${AI_INTERACTION_LOG_STATS_BASE_PATH}?${filterParams}`));
+        // The stats fragment (cards + cost breakdown) is replaced wholesale, so the
+        // info-icon popovers must be (re)initialised against the freshly injected DOM.
+        AiPricingInfoPopover.initAll();
     } catch (error) {
         console.error(failedToLoadMessage, error);
     }

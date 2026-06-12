@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Spryker\Zed\AiFoundation;
 
+use Spryker\Service\AiFoundation\AiFoundationServiceInterface;
 use Spryker\Zed\AiFoundation\Communication\Plugin\AiFoundation\NeuronAiVendorProviderPlugin;
 use Spryker\Zed\AiFoundation\Dependency\VendorAdapter\VendorProviderPluginInterface;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
@@ -27,6 +28,8 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
     public const string PLUGINS_AI_WORKFLOW_CONDITION = 'PLUGINS_AI_WORKFLOW_CONDITION';
 
     public const string FACADE_STATE_MACHINE = 'FACADE_STATE_MACHINE';
+
+    public const string SERVICE_AI_FOUNDATION = 'SERVICE_AI_FOUNDATION';
 
     /**
      * @uses \Spryker\Zed\Form\Communication\Plugin\Application\FormApplicationPlugin::SERVICE_FORM_CSRF_PROVIDER
@@ -52,6 +55,7 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = $this->addPostPromptPlugins($container);
         $container = $this->addPreToolCallPlugins($container);
         $container = $this->addPostToolCallPlugins($container);
+        $container = $this->addAiFoundationService($container);
 
         return $container;
     }
@@ -66,6 +70,16 @@ class AiFoundationDependencyProvider extends AbstractBundleDependencyProvider
         $container = $this->addAiInteractionLogProcessorPlugins($container);
         $container = $this->addCsrfProviderService($container);
         $container = $this->addStateMachineFacade($container);
+        $container = $this->addAiFoundationService($container);
+
+        return $container;
+    }
+
+    protected function addAiFoundationService(Container $container): Container
+    {
+        $container->set(static::SERVICE_AI_FOUNDATION, function (Container $container): AiFoundationServiceInterface {
+            return $container->getLocator()->aiFoundation()->service();
+        });
 
         return $container;
     }

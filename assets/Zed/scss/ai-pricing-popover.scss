@@ -1,0 +1,102 @@
+// AI interaction cost estimator — info icon + progressive-disclosure popover.
+
+.ai-pricing-info {
+    display: inline-block;
+    cursor: help;
+    margin-left: 4px;
+    line-height: 1;
+    color: var(--bs-gray-500, #9ca3af);
+
+    &:hover,
+    &:focus {
+        color: var(--bs-gray-700, #495057);
+        outline: none;
+    }
+
+    &[data-state='alert'] {
+        color: #d97706;
+    }
+
+    .material-symbols-outlined {
+        font-size: 18px;
+        vertical-align: middle;
+    }
+}
+
+.ai-pricing-popover {
+    position: absolute;
+    z-index: 1080;
+    width: 340px;
+    padding: 14px 12px;
+    background: #fff;
+    border: 1px solid var(--bs-border-color, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--bs-gray-700, #495057);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s ease-in-out;
+
+    &--row {
+        width: 300px;
+    }
+
+    &--visible {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 14px;
+
+        .material-symbols-outlined {
+            font-size: 20px;
+        }
+    }
+
+    &__body {
+        margin: 0;
+        color: var(--bs-gray-700, #495057);
+    }
+
+    &__divider {
+        margin: 12px 0;
+        opacity: 0.15;
+    }
+
+    &__alert {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    &__dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d97706;
+        flex: 0 0 auto;
+    }
+
+    &__cta {
+        display: inline-block;
+        margin-top: 12px;
+        color: #0f766e;
+        font-weight: 600;
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            color: #0f766e;
+            text-decoration: underline;
+        }
+    }
+}

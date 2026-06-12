@@ -134,6 +134,7 @@
         <property name="isSuccessful" type="bool" description="Indicates whether the AI interaction completed successfully."/>
         <property name="metadata" type="string" description="JSON-encoded metadata (tool invocations, errors, schema class)."/>
         <property name="createdAt" type="string" description="Timestamp of when the interaction log was created."/>
+        <property name="estimatedCost" type="float" description="Estimated USD cost of the interaction; null when the provider/model has no configured price."/>
     </transfer>
 
     <transfer name="AiInteractionLogCollection" strict="true">
@@ -169,6 +170,47 @@
         <property name="successCount" type="int"/>
         <property name="successRate" type="float"/>
         <property name="averageInferenceTimeMs" type="float"/>
+        <property name="totalEstimatedCost" type="float" description="Grand total estimated cost across all priced interactions in the criteria; unpriced interactions are excluded. Only meaningful when all priced interactions share a single currency — see currencyTotals when they differ."/>
+        <property name="totalCurrency" type="string" description="Currency code for the grand total; set only when all priced interactions share a single configured currency, otherwise null."/>
+        <property name="currencyTotals" type="AiCurrencyTotal[]" singular="currencyTotal" description="Estimated cost grand totals grouped by currency; one entry per distinct currency among the priced interactions."/>
+        <property name="pricingBreakdowns" type="AiPricingBreakdown[]" singular="pricingBreakdown"/>
+        <property name="unpricedCombinations" type="AiInteractionLogUnpricedCombination[]" singular="unpricedCombination"/>
+        <property name="hasUnpricedInteractions" type="bool" description="True when at least one interaction in the criteria has no configured price."/>
+    </transfer>
+
+    <transfer name="AiModelPrice" strict="true">
+        <property name="provider" type="string"/>
+        <property name="model" type="string"/>
+        <property name="inputPricePerMillion" type="float" description="Configured price per 1,000,000 input tokens; null when unpriced."/>
+        <property name="outputPricePerMillion" type="float" description="Configured price per 1,000,000 output tokens; null when unpriced."/>
+        <property name="currency" type="string" description="Optional currency code configured alongside the model prices (e.g. USD); null when not configured."/>
+        <property name="isPriced" type="bool" description="True only when both input and output prices are valid non-negative decimals."/>
+    </transfer>
+
+    <transfer name="AiPriceMap" strict="true">
+        <property name="aiModelPrices" type="AiModelPrice[]" singular="aiModelPrice"/>
+    </transfer>
+
+    <transfer name="AiPricingBreakdown" strict="true">
+        <property name="provider" type="string"/>
+        <property name="model" type="string"/>
+        <property name="requestCount" type="int"/>
+        <property name="totalTokens" type="int"/>
+        <property name="inputTokens" type="int"/>
+        <property name="outputTokens" type="int"/>
+        <property name="estimatedCost" type="float" description="Estimated cost for this provider/model group; null when unpriced."/>
+        <property name="currency" type="string" description="Optional currency code configured for this provider/model's prices; null when not configured."/>
+    </transfer>
+
+    <transfer name="AiCurrencyTotal" strict="true">
+        <property name="currency" type="string" description="Currency code for this total; null when the priced interactions in this group have no configured currency."/>
+        <property name="totalEstimatedCost" type="float" description="Sum of estimated costs for all priced interactions sharing this currency."/>
+    </transfer>
+
+    <transfer name="AiInteractionLogUnpricedCombination" strict="true">
+        <property name="provider" type="string"/>
+        <property name="model" type="string"/>
+        <property name="requestCount" type="int"/>
     </transfer>
 
     <transfer name="AuditLoggerConfigCriteria" strict="true">

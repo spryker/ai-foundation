@@ -11,6 +11,7 @@ use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCriteriaTransfer;
+use Generated\Shared\Transfer\AiPriceMapTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
@@ -130,5 +131,17 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
         return $this->getFactory()
             ->createAiInteractionLogReader()
             ->getAiInteractionLogAggregation($aiInteractionLogCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getAiPriceMap(): AiPriceMapTransfer
+    {
+        return $this->getFactory()
+            ->createAiInteractionLogReader()
+            ->getAiPriceMap();
     }
 }

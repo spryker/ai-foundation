@@ -122,4 +122,44 @@ class AiFoundationFacadeGetAiInteractionLogAggregationTest extends Unit
         $this->assertSame(1, $aggregationTransfer->getTotalRequests());
         $this->assertSame(150, $aggregationTransfer->getTotalTokens());
     }
+
+    public function testGivenUnpricedModelsWhenGettingAggregationThenExcludesFromTotalAndReportsUnpricedCombinations(): void
+    {
+        // Arrange
+        // No prices are configured for these provider/model combinations, so they must be reported as unpriced.
+        $configName = sprintf('test_unpriced_%s', uniqid());
+        $provider = sprintf('provider_a_%s', uniqid());
+        $this->tester->haveAiInteractionLog([
+            'configuration_name' => $configName,
+            'provider' => $provider,
+            'model' => 'model-x',
+            'input_tokens' => 100,
+            'output_tokens' => 50,
+        ]);
+        $this->tester->haveAiInteractionLog([
+            'configuration_name' => $configName,
+            'provider' => $provider,
+            'model' => 'model-x',
+            'input_tokens' => 200,
+            'output_tokens' => 100,
+        ]);
+
+        $criteriaTransfer = (new AiInteractionLogCriteriaTransfer())
+            ->setAiInteractionLogConditions(
+                (new AiInteractionLogConditionsTransfer())
+                    ->addConfigurationName($configName),
+            );
+
+        // Act
+        $aggregationTransfer = $this->tester->getFacade()->getAiInteractionLogAggregation($criteriaTransfer);
+
+        // Assert
+        $this->assertTrue($aggregationTransfer->getHasUnpricedInteractions());
+        $this->assertSame(0.0, $aggregationTransfer->getTotalEstimatedCost());
+        // The unpriced combination is still listed in the breakdown (with a null estimated cost) so it is visible to the admin.
+        $this->assertCount(1, $aggregationTransfer->getPricingBreakdowns());
+        $this->assertNull($aggregationTransfer->getPricingBreakdowns()->offsetGet(0)->getEstimatedCost());
+        $this->assertCount(1, $aggregationTransfer->getUnpricedCombinations());
+        $this->assertSame(2, $aggregationTransfer->getUnpricedCombinations()->offsetGet(0)->getRequestCount());
+    }
 }

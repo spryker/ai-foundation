@@ -11,6 +11,7 @@ use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCriteriaTransfer;
+use Generated\Shared\Transfer\AiPriceMapTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
@@ -179,6 +180,7 @@ interface AiFoundationFacadeInterface
      * Specification:
      * - Returns aggregated statistics for AI interaction logs filtered by criteria.
      * - Calculates total request count, total tokens consumed, success rate percentage, and average inference time.
+     * - Calculates the grand total estimated USD cost and a per-provider/model cost breakdown using the configured token prices; interactions with no configured price are excluded from the total and reported as unpriced combinations.
      * - Applies the same filtering conditions as `getAiInteractionLogCollection()`.
      * - Returns zero-value aggregation if no logs match criteria.
      *
@@ -187,4 +189,14 @@ interface AiFoundationFacadeInterface
     public function getAiInteractionLogAggregation(
         AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
     ): AiInteractionLogAggregationTransfer;
+
+    /**
+     * Specification:
+     * - Returns the configured token price (USD per 1,000,000 tokens) for every priceable provider/model.
+     * - Each entry is marked priced only when both its input and output prices are configured as non-negative decimals; otherwise it is unpriced.
+     * - Reads prices from configuration management at the global scope; returns unpriced entries when no prices are configured.
+     *
+     * @api
+     */
+    public function getAiPriceMap(): AiPriceMapTransfer;
 }

@@ -9,9 +9,14 @@ declare(strict_types=1);
 
 namespace Spryker\Zed\AiFoundation\Business;
 
+use Spryker\Service\AiFoundation\AiFoundationServiceInterface;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilder;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilderInterface;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Cost\AiInteractionCostCalculator;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Cost\AiInteractionCostCalculatorInterface;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Cost\AiPriceReader;
+use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Cost\AiPriceReaderInterface;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreator;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Creator\AiInteractionLogCreatorInterface;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\Reader\AiInteractionLogReader;
@@ -151,7 +156,29 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
     {
         return new AiInteractionLogReader(
             aiFoundationRepository: $this->getRepository(),
+            aiPriceReader: $this->createAiPriceReader(),
+            aiInteractionCostCalculator: $this->createAiInteractionCostCalculator(),
         );
+    }
+
+    public function createAiPriceReader(): AiPriceReaderInterface
+    {
+        return new AiPriceReader(
+            aiFoundationConfig: $this->getConfig(),
+        );
+    }
+
+    public function createAiInteractionCostCalculator(): AiInteractionCostCalculatorInterface
+    {
+        return new AiInteractionCostCalculator(
+            aiFoundationService: $this->getAiFoundationService(),
+            aiFoundationConfig: $this->getConfig(),
+        );
+    }
+
+    public function getAiFoundationService(): AiFoundationServiceInterface
+    {
+        return $this->getProvidedDependency(AiFoundationDependencyProvider::SERVICE_AI_FOUNDATION);
     }
 
     /**

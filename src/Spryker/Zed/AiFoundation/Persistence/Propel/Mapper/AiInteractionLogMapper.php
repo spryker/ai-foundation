@@ -12,6 +12,8 @@ namespace Spryker\Zed\AiFoundation\Persistence\Propel\Mapper;
 use Generated\Shared\Transfer\AiInteractionLogAggregationTransfer;
 use Generated\Shared\Transfer\AiInteractionLogCollectionTransfer;
 use Generated\Shared\Transfer\AiInteractionLogTransfer;
+use Generated\Shared\Transfer\AiPricingBreakdownTransfer;
+use Orm\Zed\AiFoundation\Persistence\Map\SpyAiInteractionLogTableMap;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 use Propel\Runtime\Collection\ObjectCollection;
 
@@ -24,6 +26,12 @@ class AiInteractionLogMapper implements AiInteractionLogMapperInterface
     public const string VIRTUAL_COLUMN_SUCCESS_COUNT = 'successCount';
 
     public const string VIRTUAL_COLUMN_AVERAGE_INFERENCE_TIME_MS = 'averageInferenceTimeMs';
+
+    public const string VIRTUAL_COLUMN_REQUEST_COUNT = 'requestCount';
+
+    public const string VIRTUAL_COLUMN_INPUT_TOKENS = 'inputTokens';
+
+    public const string VIRTUAL_COLUMN_OUTPUT_TOKENS = 'outputTokens';
 
     public function mapAiInteractionLogTransferToEntity(
         AiInteractionLogTransfer $aiInteractionLogTransfer,
@@ -80,5 +88,23 @@ class AiInteractionLogMapper implements AiInteractionLogMapperInterface
             ->setAverageInferenceTimeMs((float)($row[static::VIRTUAL_COLUMN_AVERAGE_INFERENCE_TIME_MS] ?? 0));
 
         return $aiInteractionLogAggregationTransfer;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function mapPricingBreakdownRowToAiPricingBreakdownTransfer(
+        array $row,
+        AiPricingBreakdownTransfer $aiPricingBreakdownTransfer,
+    ): AiPricingBreakdownTransfer {
+        $aiPricingBreakdownTransfer
+            ->setProvider((string)($row[SpyAiInteractionLogTableMap::COL_PROVIDER] ?? ''))
+            ->setModel((string)($row[SpyAiInteractionLogTableMap::COL_MODEL] ?? ''))
+            ->setRequestCount((int)($row[static::VIRTUAL_COLUMN_REQUEST_COUNT] ?? 0))
+            ->setInputTokens((int)($row[static::VIRTUAL_COLUMN_INPUT_TOKENS] ?? 0))
+            ->setOutputTokens((int)($row[static::VIRTUAL_COLUMN_OUTPUT_TOKENS] ?? 0))
+            ->setTotalTokens((int)($row[static::VIRTUAL_COLUMN_TOTAL_TOKENS] ?? 0));
+
+        return $aiPricingBreakdownTransfer;
     }
 }

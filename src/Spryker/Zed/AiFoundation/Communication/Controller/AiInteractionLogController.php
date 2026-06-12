@@ -46,6 +46,7 @@ class AiInteractionLogController extends AbstractController
         return $this->viewResponse([
             'aiInteractionLogTable' => $aiInteractionLogTable->render(),
             'filterForm' => $filterForm->createView(),
+            'aggregateCostPrecision' => $this->getFactory()->getConfig()->getCostRoundingPrecisionForAggregate(),
         ]);
     }
 
@@ -74,6 +75,7 @@ class AiInteractionLogController extends AbstractController
 
         return $this->renderView('@AiFoundation/Partials/ai-interaction-log-stats-cards.twig', [
             'aggregation' => $aggregationTransfer,
+            'aggregateCostPrecision' => $this->getFactory()->getConfig()->getCostRoundingPrecisionForAggregate(),
         ]);
     }
 

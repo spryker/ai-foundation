@@ -1,0 +1,95 @@
+{% import _self as breakdownMacros %}
+
+{% macro renderUnpricedRowInfo() %}
+    <span class="js-ai-pricing-info ai-pricing-info"
+          tabindex="0"
+          role="button"
+          data-popover-class="ai-pricing-popover ai-pricing-popover--row"
+          data-state="alert"
+          aria-label="{{ 'Pricing not configured' | trans | e('html_attr') }}">
+        <span class="material-symbols-outlined">info</span>
+        <template class="js-ai-pricing-popover">
+            <div class="ai-pricing-popover__alert">
+                <span class="ai-pricing-popover__dot"></span>
+                <strong>{{ 'Pricing not configured' | trans }}</strong>
+            </div>
+            <p class="ai-pricing-popover__body">{{ 'This provider / model has no configured price, so its cost is excluded from the row total and the overall estimate.' | trans }}</p>
+            <a class="ai-pricing-popover__cta" href="{{ url('/configuration/manage') }}">{{ 'Configure pricing' | trans }} &rarr;</a>
+        </template>
+    </span>
+{% endmacro %}
+
+{% macro renderPricedRowInfo() %}
+    <span class="js-ai-pricing-info ai-pricing-info"
+          tabindex="0"
+          role="button"
+          data-popover-class="ai-pricing-popover ai-pricing-popover--row"
+          data-state="calm"
+          aria-label="{{ 'About estimated cost' | trans | e('html_attr') }}">
+        <span class="material-symbols-outlined">info</span>
+        <template class="js-ai-pricing-popover">
+            <div class="ai-pricing-popover__header">
+                <span class="material-symbols-outlined">info</span>
+                <strong>{{ 'About estimated cost' | trans }}</strong>
+            </div>
+            <p class="ai-pricing-popover__body">{{ 'All cost figures are estimates based on the token prices configured under the AI Vendor configuration feature. They may overestimate actual spend, because cached input tokens (billed at a lower rate) are not reported separately by the AI library.' | trans }}</p>
+        </template>
+    </span>
+{% endmacro %}
+
+{% if aggregation is defined %}
+    <div class="row g-2 mb-2" id="cost-breakdown">
+        <div class="col-12">
+            {% if aggregation.pricingBreakdowns | default([]) | length > 0 %}
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="text-muted fs-6">{{ 'Estimated cost by provider and model' | trans }}</h2>
+                        <table class="table table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'Provider' | trans }}</th>
+                                    <th>{{ 'Model' | trans }}</th>
+                                    <th class="text-end">{{ 'Requests' | trans }}</th>
+                                    <th class="text-end">{{ 'Total Tokens' | trans }}</th>
+                                    <th class="text-end">{{ 'Estimated cost' | trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pricingBreakdown in aggregation.pricingBreakdowns %}
+                                    <tr>
+                                        <td>{{ pricingBreakdown.provider }}</td>
+                                        <td>{{ pricingBreakdown.model }}</td>
+                                        <td class="text-end">{{ pricingBreakdown.requestCount | number_format }}</td>
+                                        <td class="text-end">{{ pricingBreakdown.totalTokens | number_format }}</td>
+                                        <td class="text-end">
+                                            {%- if pricingBreakdown.estimatedCost is null -%}
+                                                &mdash; {{ breakdownMacros.renderUnpricedRowInfo() }}
+                                            {%- else -%}
+                                                {{ pricingBreakdown.estimatedCost | number_format(aggregateCostPrecision|default(2)) }}{% if pricingBreakdown.currency %} {{ pricingBreakdown.currency }}{% endif %} {{ breakdownMacros.renderPricedRowInfo() }}
+                                            {%- endif -%}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                {% if aggregation.currencyTotals | default([]) | length > 1 %}
+                                    {% for currencyTotal in aggregation.currencyTotals %}
+                                        <tr>
+                                            <th colspan="4" class="text-end">{{ 'Total estimated cost' | trans }}</th>
+                                            <th class="text-end">{{ currencyTotal.totalEstimatedCost | default(0) | number_format(aggregateCostPrecision|default(2)) }}{% if currencyTotal.currency %} {{ currencyTotal.currency }}{% endif %}</th>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <th colspan="4" class="text-end">{{ 'Total estimated cost' | trans }}</th>
+                                        <th class="text-end">{{ aggregation.totalEstimatedCost | default(0) | number_format(aggregateCostPrecision|default(2)) }}{% if aggregation.totalCurrency %} {{ aggregation.totalCurrency }}{% endif %}</th>
+                                    </tr>
+                                {% endif %}
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

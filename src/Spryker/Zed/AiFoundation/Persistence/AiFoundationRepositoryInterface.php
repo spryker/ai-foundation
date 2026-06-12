@@ -38,4 +38,13 @@ interface AiFoundationRepositoryInterface
     public function getAiInteractionLogAggregation(
         AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
     ): AiInteractionLogAggregationTransfer;
+
+    /**
+     * Returns the per-provider/model token aggregation (request count, summed input/output/total tokens) for AI interaction logs filtered by criteria.
+     *
+     * @return array<\Generated\Shared\Transfer\AiPricingBreakdownTransfer>
+     */
+    public function getAiInteractionLogPricingBreakdown(
+        AiInteractionLogCriteriaTransfer $aiInteractionLogCriteriaTransfer,
+    ): array;
 }

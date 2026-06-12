@@ -9,17 +9,69 @@
     </div>
 {% endmacro %}
 
+{% macro renderTotalEstimatedCost(aggregation, aggregateCostPrecision) %}
+    {%- if aggregation is null -%}
+        -
+    {%- elseif aggregation.currencyTotals | default([]) | length > 1 -%}
+        {%- for currencyTotal in aggregation.currencyTotals -%}
+            {{ currencyTotal.totalEstimatedCost | default(0) | number_format(aggregateCostPrecision|default(2)) }}{% if currencyTotal.currency %} {{ currencyTotal.currency }}{% endif %}{% if not loop.last %}<br>{% endif %}
+        {%- endfor -%}
+    {%- else -%}
+        {{ aggregation.totalEstimatedCost | default(0) | number_format(aggregateCostPrecision|default(2)) }}{% if aggregation.totalCurrency %} {{ aggregation.totalCurrency }}{% endif %}
+    {%- endif -%}
+{% endmacro %}
+
 <div class="row g-2 mb-2" id="stats-cards">
-    <div class="col-sm-3">
+    <div class="col-sm-6 col-lg">
         {{ macros.renderStatsCards('Total Interactions', aggregation is defined ? aggregation.totalRequests | default(0) | number_format : '-') }}
     </div>
-    <div class="col-sm-3">
+    <div class="col-sm-6 col-lg">
         {{ macros.renderStatsCards('Total Tokens', aggregation is defined ? aggregation.totalTokens | default(0) | number_format : '-') }}
     </div>
-    <div class="col-sm-3">
+    <div class="col-sm-6 col-lg">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="text-muted fs-6 m-0">
+                    {{ 'Total estimated cost' | trans }}
+                    {% if aggregation is defined %}
+                        <span class="js-ai-pricing-info ai-pricing-info"
+                              tabindex="0"
+                              role="button"
+                              data-popover-class="ai-pricing-popover ai-pricing-popover--card"
+                              data-state="{{ aggregation.hasUnpricedInteractions | default(false) ? 'alert' : 'calm' }}"
+                              aria-label="{{ 'About estimated cost' | trans | e('html_attr') }}">
+                            <span class="material-symbols-outlined">info</span>
+                            <template class="js-ai-pricing-popover">
+                                <div class="ai-pricing-popover__header">
+                                    <span class="material-symbols-outlined">info</span>
+                                    <strong>{{ 'About estimated cost' | trans }}</strong>
+                                </div>
+                                <p class="ai-pricing-popover__body">
+                                    {{ 'All cost figures are estimates based on the token prices configured under the AI Vendor configuration feature. They may overestimate actual spend, because cached input tokens (billed at a lower rate) are not reported separately by the AI library.' | trans }}
+                                </p>
+                                {% if aggregation.hasUnpricedInteractions | default(false) %}
+                                    <hr class="ai-pricing-popover__divider">
+                                    <div class="ai-pricing-popover__alert">
+                                        <span class="ai-pricing-popover__dot"></span>
+                                        <strong>{{ '%count% interaction(s) excluded' | trans({ '%count%': aggregation.unpricedCombinations | default([]) | length }) }}</strong>
+                                    </div>
+                                    <p class="ai-pricing-popover__body">{{ '%count% provider / model combination(s) have no configured price.' | trans({ '%count%': aggregation.unpricedCombinations | default([]) | length }) }}</p>
+                                {% endif %}
+                                <a class="ai-pricing-popover__cta" href="{{ url('/configuration/manage') }}">{{ 'Configure pricing' | trans }} &rarr;</a>
+                            </template>
+                        </span>
+                    {% endif %}
+                </h2>
+                <h3 class="fs-4">{{ macros.renderTotalEstimatedCost(aggregation is defined ? aggregation : null, aggregateCostPrecision|default(2)) | raw }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg">
         {{ macros.renderStatsCards('Success Rate', aggregation is defined ? aggregation.successRate | default(0) | number_format(1) ~ '%' : '-') }}
     </div>
-    <div class="col-sm-3">
+    <div class="col-sm-6 col-lg">
         {{ macros.renderStatsCards('Avg Inference Time', aggregation is defined ? aggregation.averageInferenceTimeMs | default(0) | number_format ~ ' ms' : '-') }}
     </div>
 </div>
+
+{% include '@AiFoundation/Partials/ai-interaction-log-cost-breakdown.twig' %}

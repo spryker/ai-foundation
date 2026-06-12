@@ -11,9 +11,11 @@ namespace Spryker\Zed\AiFoundation\Communication\Table;
 
 use DateTime;
 use DateTimeInterface;
+use Generated\Shared\Transfer\AiPriceMapTransfer;
 use Orm\Zed\AiFoundation\Persistence\Map\SpyAiInteractionLogTableMap;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLogQuery;
 use Propel\Runtime\ActiveQuery\Criteria;
+use Spryker\Zed\AiFoundation\Communication\Cost\AiInteractionCostFormatterInterface;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
 
@@ -23,6 +25,8 @@ use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
 class AiInteractionLogTable extends AbstractTable
 {
     protected const string COLUMN_TOTAL_TOKENS = 'total_tokens';
+
+    protected const string COLUMN_ESTIMATED_COST = 'estimated_cost';
 
     protected const int PROMPT_TRUNCATE_LENGTH = 100;
 
@@ -46,6 +50,12 @@ class AiInteractionLogTable extends AbstractTable
      * @var array<string, mixed>
      */
     protected array $filterData = [];
+
+    public function __construct(
+        protected AiPriceMapTransfer $aiPriceMapTransfer,
+        protected AiInteractionCostFormatterInterface $aiInteractionCostFormatter,
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $filterData
@@ -79,6 +89,7 @@ class AiInteractionLogTable extends AbstractTable
             SpyAiInteractionLogTableMap::COL_PROVIDER => 'Provider',
             SpyAiInteractionLogTableMap::COL_MODEL => 'Model',
             static::COLUMN_TOTAL_TOKENS => 'Total Tokens',
+            static::COLUMN_ESTIMATED_COST => 'Estimated cost',
             SpyAiInteractionLogTableMap::COL_CONFIGURATION_NAME => 'Configuration',
             SpyAiInteractionLogTableMap::COL_IS_SUCCESSFUL => 'Status',
             SpyAiInteractionLogTableMap::COL_INFERENCE_TIME_MS => 'Inference (ms)',
@@ -137,12 +148,21 @@ class AiInteractionLogTable extends AbstractTable
 
         $logId = (int)($row[SpyAiInteractionLogTableMap::COL_ID_AI_INTERACTION_LOG] ?? 0);
 
+        $estimatedCost = $this->aiInteractionCostFormatter->formatRowCost(
+            $this->aiPriceMapTransfer,
+            (string)($row[SpyAiInteractionLogTableMap::COL_PROVIDER] ?? ''),
+            (string)($row[SpyAiInteractionLogTableMap::COL_MODEL] ?? ''),
+            $inputTokens,
+            $outputTokens,
+        );
+
         return [
             SpyAiInteractionLogTableMap::COL_PROMPT => $this->buildPromptCell($row[SpyAiInteractionLogTableMap::COL_PROMPT] ?? '', $logId),
             SpyAiInteractionLogTableMap::COL_CONVERSATION_REFERENCE => $row[SpyAiInteractionLogTableMap::COL_CONVERSATION_REFERENCE] ?? '',
             SpyAiInteractionLogTableMap::COL_PROVIDER => $row[SpyAiInteractionLogTableMap::COL_PROVIDER] ?? '',
             SpyAiInteractionLogTableMap::COL_MODEL => $row[SpyAiInteractionLogTableMap::COL_MODEL] ?? '',
             static::COLUMN_TOTAL_TOKENS => $inputTokens + $outputTokens,
+            static::COLUMN_ESTIMATED_COST => $estimatedCost,
             SpyAiInteractionLogTableMap::COL_CONFIGURATION_NAME => $row[SpyAiInteractionLogTableMap::COL_CONFIGURATION_NAME] ?? '',
             SpyAiInteractionLogTableMap::COL_IS_SUCCESSFUL => $this->buildStatusBadge((bool)$row[SpyAiInteractionLogTableMap::COL_IS_SUCCESSFUL]),
             SpyAiInteractionLogTableMap::COL_INFERENCE_TIME_MS => $row[SpyAiInteractionLogTableMap::COL_INFERENCE_TIME_MS] ?? 0,
