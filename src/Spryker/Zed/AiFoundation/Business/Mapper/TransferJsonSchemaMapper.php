@@ -118,7 +118,11 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
         $input = trim($input);
 
         try {
-            return json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+
+            if (is_array($decoded)) {
+                return $decoded;
+            }
         } catch (JsonException) {
             // Do nothing
         }
@@ -126,7 +130,11 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
         if (preg_match_all('/```(?:json)?\s*(.*?)\s*```/si', $input, $blocks)) {
             foreach ($blocks[1] as $block) {
                 try {
-                    return json_decode(trim($block), true, 512, JSON_THROW_ON_ERROR);
+                    $decoded = json_decode(trim($block), true, 512, JSON_THROW_ON_ERROR);
+
+                    if (is_array($decoded)) {
+                        return $decoded;
+                    }
                 } catch (JsonException) {
                     // do nothing
                 }
@@ -136,7 +144,11 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
         $json = $this->extractBalancedJson($input);
         if ($json !== null) {
             try {
-                return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+                $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
             } catch (JsonException) {
                 return [];
             }

@@ -43,6 +43,41 @@ class TransferJsonSchemaMapperTest extends Unit
         $transferJsonSchemaMapper->buildJsonSchema($transferWithMissingDescription);
     }
 
+    /**
+     * @dataProvider extractJsonFromTextDataProvider
+     *
+     * @param array<mixed> $expected
+     */
+    public function testGivenTextInputWhenExtractingJsonThenResultIsAlwaysArray(string $input, array $expected): void
+    {
+        // Arrange
+        $transferJsonSchemaMapper = new TransferJsonSchemaMapper();
+
+        // Act
+        $result = $transferJsonSchemaMapper->extractJsonFromText($input);
+
+        // Assert
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: array<mixed>}>
+     */
+    public function extractJsonFromTextDataProvider(): array
+    {
+        return [
+            'bare scalar integer string (regression CC-39610)' => ['1', []],
+            'bare boolean literal' => ['true', []],
+            'bare float literal' => ['3.14', []],
+            'bare null literal' => ['null', []],
+            'invalid json plain text' => ['hello', []],
+            'json object' => ['{"a":1}', ['a' => 1]],
+            'json array' => ['[1,2,3]', [1, 2, 3]],
+            'fenced json code block' => ["```json\n{\"x\": 10}\n```", ['x' => 10]],
+            'object embedded in prose' => ['Here you go: {"y":5} thanks', ['y' => 5]],
+        ];
+    }
+
     protected function createTransferWithMissingDescription(): AbstractTransfer
     {
         $transfer = new AiResponseTransfer();
