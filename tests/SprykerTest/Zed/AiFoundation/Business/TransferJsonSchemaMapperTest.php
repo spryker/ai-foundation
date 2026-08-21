@@ -84,7 +84,6 @@ class TransferJsonSchemaMapperTest extends Unit
 
         $reflectionClass = new ReflectionClass($transfer);
         $transferMetadataProperty = $reflectionClass->getProperty('transferMetadata');
-        $transferMetadataProperty->setAccessible(true);
 
         $metadata = [
             'test_property' => [

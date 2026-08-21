@@ -23,7 +23,6 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
     {
         $reflectionClass = new ReflectionClass($transfer);
         $transferMetadataProperty = $reflectionClass->getProperty('transferMetadata');
-        $transferMetadataProperty->setAccessible(true);
         $metadata = $transferMetadataProperty->getValue($transfer);
 
         $schema = [

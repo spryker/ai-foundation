@@ -269,7 +269,6 @@ class NeuronAiMessageMapper implements NeuronAiMessageMapperInterface
     {
         $reflectionClass = new ReflectionClass($transfer);
         $transferMetadataProperty = $reflectionClass->getProperty('transferMetadata');
-        $transferMetadataProperty->setAccessible(true);
         $metadata = $transferMetadataProperty->getValue($transfer);
 
         $missingProperties = [];
