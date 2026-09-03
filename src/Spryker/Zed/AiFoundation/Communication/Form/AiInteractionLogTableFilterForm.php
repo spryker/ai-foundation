@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 namespace Spryker\Zed\AiFoundation\Communication\Form;
 
+use Spryker\Zed\Gui\Communication\Form\Type\DatePickerType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -29,6 +29,8 @@ class AiInteractionLogTableFilterForm extends AbstractType
     protected const string FIELD_CREATED_AT_TO = 'created_at_to';
 
     public const string OPTION_CONFIGURATION_NAME_CHOICES = 'configuration_name_choices';
+
+    protected const string RANGE_GROUP_CREATED_AT = 'ai-interaction-log-created-at';
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -98,10 +100,11 @@ class AiInteractionLogTableFilterForm extends AbstractType
 
     protected function addCreatedAtFromField(FormBuilderInterface $builder): self
     {
-        $builder->add(static::FIELD_CREATED_AT_FROM, DateType::class, [
+        $builder->add(static::FIELD_CREATED_AT_FROM, DatePickerType::class, [
             'label' => 'From Date',
-            'widget' => 'single_text',
             'required' => false,
+            'range_group' => static::RANGE_GROUP_CREATED_AT,
+            'range_role' => DatePickerType::RANGE_ROLE_START,
         ]);
 
         return $this;
@@ -109,10 +112,11 @@ class AiInteractionLogTableFilterForm extends AbstractType
 
     protected function addCreatedAtToField(FormBuilderInterface $builder): self
     {
-        $builder->add(static::FIELD_CREATED_AT_TO, DateType::class, [
+        $builder->add(static::FIELD_CREATED_AT_TO, DatePickerType::class, [
             'label' => 'To Date',
-            'widget' => 'single_text',
             'required' => false,
+            'range_group' => static::RANGE_GROUP_CREATED_AT,
+            'range_role' => DatePickerType::RANGE_ROLE_END,
         ]);
 
         return $this;
