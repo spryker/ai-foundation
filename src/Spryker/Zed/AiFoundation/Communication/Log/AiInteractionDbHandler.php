@@ -26,11 +26,11 @@ class AiInteractionDbHandler extends AbstractProcessingHandler
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param \Monolog\LogRecord|array<string, mixed> $record
      */
-    protected function write(array $record): void
+    protected function write($record): void
     {
-        $context = $record['context'] ?? [];
+        $context = is_array($record) ? ($record['context'] ?? []) : $record->context;
 
         /** @var \Generated\Shared\Transfer\AiInteractionLogTransfer|null $aiInteractionLogTransfer */
         $aiInteractionLogTransfer = $context[AiFoundationConstants::AUDIT_LOG_CONTEXT_KEY_TRANSFER] ?? null;
