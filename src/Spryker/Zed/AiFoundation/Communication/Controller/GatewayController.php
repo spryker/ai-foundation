@@ -7,6 +7,13 @@
 
 namespace Spryker\Zed\AiFoundation\Communication\Controller;
 
+use Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer;
+use Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer;
+use Generated\Shared\Transfer\ChatSessionRequestTransfer;
+use Generated\Shared\Transfer\ChatSessionResponseTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionDeleteCriteriaTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionRequestTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
@@ -32,5 +39,28 @@ class GatewayController extends AbstractGatewayController
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer {
         return $this->getFacade()->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+    }
+
+    public function initChatSessionAction(ChatSessionRequestTransfer $chatSessionRequestTransfer): ChatSessionResponseTransfer
+    {
+        return $this->getFacade()->initChatSession($chatSessionRequestTransfer);
+    }
+
+    public function deleteConversationHistoryCollectionAction(
+        ConversationHistoryCollectionDeleteCriteriaTransfer $conversationHistoryCollectionDeleteCriteriaTransfer
+    ): ConversationHistoryCollectionResponseTransfer {
+        return $this->getFacade()->deleteConversationHistoryCollection($conversationHistoryCollectionDeleteCriteriaTransfer);
+    }
+
+    public function saveConversationHistoryCollectionAction(
+        ConversationHistoryCollectionRequestTransfer $conversationHistoryCollectionRequestTransfer
+    ): ConversationHistoryCollectionResponseTransfer {
+        return $this->getFacade()->saveConversationHistoryCollection($conversationHistoryCollectionRequestTransfer);
+    }
+
+    public function createAiInteractionLogCollectionAction(
+        AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
+    ): AiInteractionLogCollectionResponseTransfer {
+        return $this->getFacade()->createAiInteractionLogCollection($aiInteractionLogCollectionRequestTransfer);
     }
 }

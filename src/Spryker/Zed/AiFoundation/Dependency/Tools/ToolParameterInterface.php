@@ -17,18 +17,15 @@ interface ToolParameterInterface
      * - Returns the parameter name.
      *
      * @api
-     *
-     * @return string
      */
     public function getName(): string;
 
     /**
      * Specification:
-     * - Returns the parameter type: string, integer, number, boolean, array, object.
+     * - Returns the parameter type as one of the `\Spryker\Shared\AiFoundation\Tools\ToolParameterType` values.
+     * - Falls back to `ToolParameterType::String` when the returned value is not a `ToolParameterType` value.
      *
      * @api
-     *
-     * @return 'string'|'integer'|'number'|'boolean'|'array'|'object'
      */
     public function getType(): string;
 
@@ -37,8 +34,6 @@ interface ToolParameterInterface
      * - Returns a description of what this parameter is used for.
      *
      * @api
-     *
-     * @return string
      */
     public function getDescription(): string;
 
@@ -47,8 +42,6 @@ interface ToolParameterInterface
      * - Returns whether this parameter is required.
      *
      * @api
-     *
-     * @return bool
      */
     public function isRequired(): bool;
 }

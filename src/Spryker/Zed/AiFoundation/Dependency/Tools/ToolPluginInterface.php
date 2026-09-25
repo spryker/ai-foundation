@@ -17,8 +17,6 @@ interface ToolPluginInterface
      * - Returns the unique identifier for this tool.
      *
      * @api
-     *
-     * @return string
      */
     public function getName(): string;
 
@@ -28,8 +26,6 @@ interface ToolPluginInterface
      * - This description is used by the large language model to understand when to use this tool.
      *
      * @api
-     *
-     * @return string
      */
     public function getDescription(): string;
 
@@ -50,8 +46,6 @@ interface ToolPluginInterface
      * @api
      *
      * @param mixed ...$arguments Variable number of arguments passed to the tool
-     *
-     * @return mixed
      */
     public function execute(...$arguments): mixed;
 }

@@ -11,32 +11,12 @@ use NeuronAI\Tools\PropertyType;
 use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolInterface;
 use NeuronAI\Tools\ToolProperty;
+use Spryker\Shared\AiFoundation\Tools\ToolParameterType;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolParameterInterface;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolPluginInterface;
 
 class NeuronAiToolMapper implements NeuronAiToolMapperInterface
 {
-    protected const string TYPE_STRING = 'string';
-
-    protected const string TYPE_INTEGER = 'integer';
-
-    protected const string TYPE_NUMBER = 'number';
-
-    protected const string TYPE_BOOLEAN = 'boolean';
-
-    protected const string TYPE_ARRAY = 'array';
-
-    protected const string TYPE_OBJECT = 'object';
-
-    protected const array PARAMETER_TYPE_MAP = [
-        self::TYPE_INTEGER => PropertyType::INTEGER,
-        self::TYPE_STRING => PropertyType::STRING,
-        self::TYPE_NUMBER => PropertyType::NUMBER,
-        self::TYPE_BOOLEAN => PropertyType::BOOLEAN,
-        self::TYPE_ARRAY => PropertyType::ARRAY,
-        self::TYPE_OBJECT => PropertyType::OBJECT,
-    ];
-
     /**
      * @inheritDoc
      */
@@ -72,9 +52,11 @@ class NeuronAiToolMapper implements NeuronAiToolMapperInterface
 
     protected function mapParameterToToolProperty(ToolParameterInterface $parameter): ToolProperty
     {
+        $toolParameterType = ToolParameterType::tryFrom($parameter->getType()) ?? ToolParameterType::String;
+
         return new ToolProperty(
             name: $parameter->getName(),
-            type: static::PARAMETER_TYPE_MAP[$parameter->getType()] ?? PropertyType::STRING,
+            type: PropertyType::from($toolParameterType->value),
             description: $parameter->getDescription(),
             required: $parameter->isRequired(),
         );

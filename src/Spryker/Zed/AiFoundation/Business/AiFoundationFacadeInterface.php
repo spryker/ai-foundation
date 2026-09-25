@@ -16,6 +16,11 @@ use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
+use Generated\Shared\Transfer\ChatSessionRequestTransfer;
+use Generated\Shared\Transfer\ChatSessionResponseTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionDeleteCriteriaTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionRequestTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
@@ -51,11 +56,7 @@ interface AiFoundationFacadeInterface
      *
      * @api
      *
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
-     *
      * @throws \Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Exception\NeuronAiConfigurationException
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer;
 
@@ -70,14 +71,52 @@ interface AiFoundationFacadeInterface
      * - If `ConversationHistoryCriteriaTransfer.conversationHistoryConditions.conversationReferences` is empty, returns empty collection.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
      */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
     ): ConversationHistoryCollectionTransfer;
+
+    /**
+     * Specification:
+     * - Returns the resolved AI configuration and the stored chat history in one response.
+     * - Returns an unsuccessful response when `ChatSessionRequestTransfer.aiConfigurationName` is not present in the client resolvable allowlist, so a caller cannot enumerate configurations.
+     * - Returns an unsuccessful response when the resolved AI configuration is missing `provider_name` or `provider_config`.
+     * - Expands configuration-management references into live values before returning.
+     * - Returns the chat history of `ChatSessionRequestTransfer.conversationReference`; the caller owns scoping the conversation to its actor.
+     * - Returns no chat history when `ChatSessionRequestTransfer.conversationReference` is not provided.
+     * - Populates `ChatSessionResponseTransfer.contextWindow` with the configured conversation history context window.
+     * - Populates `ChatSessionResponseTransfer.errors` with error details when unsuccessful.
+     *
+     * @api
+     */
+    public function initChatSession(ChatSessionRequestTransfer $chatSessionRequestTransfer): ChatSessionResponseTransfer;
+
+    /**
+     * Specification:
+     * - Persists `ConversationHistoryTransfer.originalMessages` of every `ConversationHistoryCollectionRequestTransfer.conversationHistories` item as the chat history of its `ConversationHistoryTransfer.conversationReference`.
+     * - Creates the chat history when none exists for the conversation reference, otherwise overwrites it; the chat history is not owner scoped, so the caller owns scoping the conversation to its actor before calling.
+     * - Persists all items in one transaction.
+     * - Returns an unsuccessful response without persisting anything when no item is given or any item has no `ConversationHistoryTransfer.conversationReference`.
+     * - Returns the persisted chat histories in `ConversationHistoryCollectionResponseTransfer.conversationHistories`.
+     * - Populates `ConversationHistoryCollectionResponseTransfer.errors` with error details when unsuccessful.
+     *
+     * @api
+     */
+    public function saveConversationHistoryCollection(
+        ConversationHistoryCollectionRequestTransfer $conversationHistoryCollectionRequestTransfer
+    ): ConversationHistoryCollectionResponseTransfer;
+
+    /**
+     * Specification:
+     * - Removes the persisted chat history of `ConversationHistoryCollectionDeleteCriteriaTransfer.conversationHistoryConditions.conversationReferences` (IN operation).
+     * - Returns an unsuccessful response without deleting anything when no usable reference is given.
+     * - Populates `ConversationHistoryCollectionResponseTransfer.errors` with error details when unsuccessful.
+     *
+     * @api
+     */
+    public function deleteConversationHistoryCollection(
+        ConversationHistoryCollectionDeleteCriteriaTransfer $conversationHistoryCollectionDeleteCriteriaTransfer
+    ): ConversationHistoryCollectionResponseTransfer;
 
     /**
      * Specification:
@@ -86,10 +125,6 @@ interface AiFoundationFacadeInterface
      * - Returns `AiInteractionLogCollectionResponseTransfer` with created entries.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiInteractionLogCollectionResponseTransfer
      */
     public function createAiInteractionLogCollection(
         AiInteractionLogCollectionRequestTransfer $aiInteractionLogCollectionRequestTransfer
@@ -110,10 +145,6 @@ interface AiFoundationFacadeInterface
      * - Returns `AiWorkflowItemCollectionResponseTransfer` with created items and/or errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
      */
     public function createAiWorkflowItemCollection(
         AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
@@ -133,10 +164,6 @@ interface AiFoundationFacadeInterface
      * - Returns `AiWorkflowItemCollectionResponseTransfer` with updated items and/or errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer
      */
     public function updateAiWorkflowItemCollection(
         AiWorkflowItemCollectionRequestTransfer $aiWorkflowItemCollectionRequestTransfer
@@ -156,10 +183,6 @@ interface AiFoundationFacadeInterface
      * - Returns `AiWorkflowItemCollectionTransfer` with matching items and pagination info.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
      */
     public function getAiWorkflowItemCollection(
         AiWorkflowItemCriteriaTransfer $aiWorkflowItemCriteriaTransfer

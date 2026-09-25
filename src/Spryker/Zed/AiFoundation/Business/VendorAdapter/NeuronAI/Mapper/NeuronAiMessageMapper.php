@@ -97,8 +97,6 @@ class NeuronAiMessageMapper implements NeuronAiMessageMapperInterface
     }
 
     /**
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
-     *
      * @return array<string, mixed>
      */
     public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array

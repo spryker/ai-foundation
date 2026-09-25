@@ -94,8 +94,6 @@ class AiFoundationEntityManager extends AbstractEntityManager implements AiFound
     }
 
     /**
-     * @param \Generated\Shared\Transfer\AiWorkflowItemTransfer $aiWorkflowItemTransfer
-     *
      * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer Returns original transfer if workflow item not found.
      */
     public function updateAiWorkflowItem(AiWorkflowItemTransfer $aiWorkflowItemTransfer): AiWorkflowItemTransfer

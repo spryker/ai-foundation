@@ -204,8 +204,6 @@ class AiWorkflowStateMachineHandlerPluginTest extends Unit
 
     /**
      * @param array<string, mixed> $methods
-     *
-     * @return \Spryker\Zed\AiFoundation\AiFoundationConfig
      */
     protected function createConfigMock(array $methods): AiFoundationConfig
     {

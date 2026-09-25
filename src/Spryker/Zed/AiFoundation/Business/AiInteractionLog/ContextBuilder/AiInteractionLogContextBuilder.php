@@ -13,6 +13,7 @@ use Generated\Shared\Transfer\AiInteractionLogTransfer;
 use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
+use Spryker\Shared\AiFoundation\AuditLog\AiInteractionLogContext;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 
 class AiInteractionLogContextBuilder implements AiInteractionLogContextBuilderInterface
@@ -22,10 +23,6 @@ class AiInteractionLogContextBuilder implements AiInteractionLogContextBuilderIn
     protected const string METADATA_KEY_ERRORS = 'errors';
 
     protected const string METADATA_KEY_STRUCTURED_SCHEMA_CLASS = 'structured_schema_class';
-
-    protected const string CONTEXT_IDENTIFIER_POST_PROMPT = 'POST_PROMPT';
-
-    protected const string CONTEXT_IDENTIFIER_POST_TOOL_CALL = 'POST_TOOL_CALL';
 
     public function buildPostPromptContext(
         PromptRequestTransfer $promptRequestTransfer,
@@ -73,7 +70,7 @@ class AiInteractionLogContextBuilder implements AiInteractionLogContextBuilderIn
         PromptResponseTransfer $promptResponseTransfer,
     ): string {
         /** @var array<string, mixed> $metadata */
-        $metadata = [static::METADATA_KEY_CONTEXT => static::CONTEXT_IDENTIFIER_POST_PROMPT];
+        $metadata = [static::METADATA_KEY_CONTEXT => AiInteractionLogContext::PostPrompt->value];
 
         foreach ($promptResponseTransfer->getErrors() as $error) {
             $metadata[static::METADATA_KEY_ERRORS][] = $error->getMessage();
@@ -89,7 +86,7 @@ class AiInteractionLogContextBuilder implements AiInteractionLogContextBuilderIn
     protected function buildToolCallMetadata(AiToolCallTransfer $aiToolCallTransfer): string
     {
         $metadata = [
-            static::METADATA_KEY_CONTEXT => static::CONTEXT_IDENTIFIER_POST_TOOL_CALL,
+            static::METADATA_KEY_CONTEXT => AiInteractionLogContext::PostToolCall->value,
             'tool_name' => $aiToolCallTransfer->getToolName(),
             'tool_arguments' => $aiToolCallTransfer->getToolArguments(),
             'tool_result' => $aiToolCallTransfer->getToolResult(),

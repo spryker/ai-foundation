@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace SprykerTest\Zed\AiFoundation;
 
 use Codeception\Actor;
+use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory;
+use Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistoryQuery;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 
 /**
@@ -32,6 +34,8 @@ use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 class AiFoundationBusinessTester extends Actor
 {
     use _generated\AiFoundationBusinessTesterActions;
+
+    public const string DEFAULT_MESSAGES_JSON = '[{"role":"user","content":"Hello"}]';
 
     /**
      * @param array<string, mixed> $override
@@ -77,5 +81,36 @@ class AiFoundationBusinessTester extends Actor
         ]);
 
         return (int)$stateMachineItemStateTransfer->getIdStateMachineItemState();
+    }
+
+    public function haveConversationHistory(
+        string $conversationReference,
+        string $messagesJson = self::DEFAULT_MESSAGES_JSON
+    ): SpyAiConversationHistory {
+        $conversationHistoryEntity = new SpyAiConversationHistory();
+        $conversationHistoryEntity->setConversationReference($conversationReference);
+        $conversationHistoryEntity->setOriginalMessages($messagesJson);
+        $conversationHistoryEntity->save();
+
+        return $conversationHistoryEntity;
+    }
+
+    public function findConversationHistoryEntity(string $conversationReference): ?SpyAiConversationHistory
+    {
+        return SpyAiConversationHistoryQuery::create()
+            ->filterByConversationReference($conversationReference)
+            ->findOne();
+    }
+
+    public function countConversationHistoryEntities(string $conversationReference): int
+    {
+        return SpyAiConversationHistoryQuery::create()
+            ->filterByConversationReference($conversationReference)
+            ->count();
+    }
+
+    public function generateUniqueConversationReference(string $prefix): string
+    {
+        return sprintf('%s-%s', $prefix, uniqid());
     }
 }

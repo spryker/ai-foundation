@@ -7,6 +7,8 @@
 
 namespace Spryker\Client\AiFoundation;
 
+use Generated\Shared\Transfer\ConversationHistoryCollectionDeleteCriteriaTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
@@ -49,5 +51,32 @@ class AiFoundationClient extends AbstractClient implements AiFoundationClientInt
         return $this->getFactory()
             ->createZedAiFoundationStub()
             ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function streamPrompt(
+        PromptRequestTransfer $promptRequestTransfer
+    ): PromptResponseTransfer {
+        return $this->getFactory()
+            ->getVendorAdapterPlugin()
+            ->getVendorAdapter()
+            ->streamPrompt($promptRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function deleteConversationHistoryCollection(
+        ConversationHistoryCollectionDeleteCriteriaTransfer $conversationHistoryCollectionDeleteCriteriaTransfer
+    ): ConversationHistoryCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createZedAiFoundationStub()
+            ->deleteConversationHistoryCollection($conversationHistoryCollectionDeleteCriteriaTransfer);
     }
 }

@@ -19,7 +19,9 @@ use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\Tool;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLog;
 use Orm\Zed\AiFoundation\Persistence\SpyAiInteractionLogQuery;
+use ReflectionClass;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
+use Spryker\Shared\Log\AuditLoggerFactory;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\AiFoundation\Business\AiFoundationFacadeInterface;
@@ -74,6 +76,28 @@ class AiFoundationFacadeAuditLogTest extends Unit
     protected const string TEST_TOOL_RESULT = '42';
 
     protected AiFoundationBusinessTester $tester;
+
+    protected function _before(): void
+    {
+        parent::_before();
+
+        $this->resetAuditLoggerCache();
+    }
+
+    /**
+     * \Spryker\Shared\Log\AuditLoggerFactory caches the resolved logger and its handlers in static properties
+     * keyed by channel name. The Client and Zed layers register the same
+     * \Spryker\Shared\AiFoundation\AiFoundationConstants::AUDIT_LOGGER_CHANNEL_NAME_AI_INTERACTION channel, but only
+     * the Zed one carries the database handler. When an earlier test in the same process resolves that channel first,
+     * a handler-less logger stays cached and the audit log entries below never reach the database.
+     */
+    protected function resetAuditLoggerCache(): void
+    {
+        $reflectionClass = new ReflectionClass(AuditLoggerFactory::class);
+
+        $reflectionClass->getProperty('loggers')->setValue(null, []);
+        $reflectionClass->getProperty('auditLoggerConfigPlugins')->setValue(null, []);
+    }
 
     public function testGivenPostPromptPluginIsRegisteredWhenPromptIsCalledThenPluginIsInvokedWithRequestAndResponse(): void
     {

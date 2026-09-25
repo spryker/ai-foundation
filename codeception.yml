@@ -2,6 +2,7 @@ namespace: SprykerTest
 
 include:
     - tests/SprykerTest/Zed/AiFoundation
+    - tests/SprykerTest/Client/AiFoundation
 
 paths:
     tests: tests

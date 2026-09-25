@@ -26,9 +26,6 @@ interface AiWorkflowItemMapperInterface
 
     /**
      * @param \Propel\Runtime\Collection\ObjectCollection<\Orm\Zed\AiFoundation\Persistence\SpyAiWorkflowItem> $aiWorkflowItemEntities
-     * @param \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer $aiWorkflowItemCollectionTransfer
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer
      */
     public function mapAiWorkflowItemEntityCollectionToAiWorkflowItemCollectionTransfer(
         ObjectCollection $aiWorkflowItemEntities,

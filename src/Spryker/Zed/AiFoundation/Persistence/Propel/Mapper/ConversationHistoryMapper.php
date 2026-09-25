@@ -42,9 +42,6 @@ class ConversationHistoryMapper
 
     /**
      * @param array<\Orm\Zed\AiFoundation\Persistence\SpyAiConversationHistory> $conversationHistoryEntities
-     * @param \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer $conversationHistoryCollectionTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
      */
     public function mapConversationHistoryEntityCollectionToConversationHistoryCollectionTransfer(
         array $conversationHistoryEntities,
@@ -63,8 +60,6 @@ class ConversationHistoryMapper
     }
 
     /**
-     * @param string $messagesJson
-     *
      * @return array<\Generated\Shared\Transfer\PromptMessageTransfer>
      */
     protected function deserializeMessages(string $messagesJson): array

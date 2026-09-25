@@ -58,8 +58,6 @@ class AiFoundationCommunicationTester extends Actor
      * Creates a test AI workflow item in the database.
      *
      * @param array<string, mixed> $seed
-     *
-     * @return \Generated\Shared\Transfer\AiWorkflowItemTransfer
      */
     public function haveAiWorkflowItem(array $seed = []): AiWorkflowItemTransfer
     {

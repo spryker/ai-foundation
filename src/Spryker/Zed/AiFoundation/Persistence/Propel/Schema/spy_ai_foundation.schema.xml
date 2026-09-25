@@ -4,7 +4,7 @@
     <table name="spy_ai_conversation_history" idMethod="native" allowPkInsert="true">
         <column name="id_ai_conversation_history" required="true" type="INTEGER" primaryKey="true" autoIncrement="true"/>
         <column name="conversation_reference" required="true" type="VARCHAR" size="255" description="Unique identifier for a conversation thread."/>
-        <column name="original_messages" required="true" type="LONGVARCHAR" description="JSON-encoded array of raw messages."/>
+        <column name="original_messages" required="true" type="CLOB" description="JSON-encoded array of raw messages."/>
 
         <behavior name="timestampable"/>
 

@@ -17,8 +17,6 @@ interface ToolSetPluginInterface
      * - Returns the unique identifier for this tool set.
      *
      * @api
-     *
-     * @return string
      */
     public function getName(): string;
 

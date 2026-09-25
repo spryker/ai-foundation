@@ -15,8 +15,6 @@ use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
 {
     /**
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $transfer
-     *
      * @return array<string, mixed>
      */
     public function buildJsonSchema(AbstractTransfer $transfer): array
@@ -48,7 +46,6 @@ class TransferJsonSchemaMapper implements TransferJsonSchemaMapperInterface
 
     /**
      * @param array<string, mixed> $propertyMetadata
-     * @param string $transferClassName
      *
      * @throws \InvalidArgumentException
      *

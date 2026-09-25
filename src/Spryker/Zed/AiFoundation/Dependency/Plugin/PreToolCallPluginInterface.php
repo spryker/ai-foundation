@@ -24,6 +24,7 @@ interface PreToolCallPluginInterface
      * Specification:
      * - Executes before each individual AI tool call within a prompt lifecycle.
      * - Receives AiToolCallTransfer containing tool name, arguments, and prompt request context.
+     * - Receives AiToolCallTransfer.toolCallId as the identifier the AI provider generated for this call, or null when the provider returns none.
      * - Can set AiToolCallTransfer.isExecutionAllowed to false to prevent tool execution.
      * - Must return the (possibly modified) AiToolCallTransfer.
      *

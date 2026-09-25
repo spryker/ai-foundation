@@ -27,10 +27,7 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
     }
 
     /**
-     * @param string|null $conversationReference
      * @param array<string, mixed> $chatHistoryConfiguration
-     *
-     * @return \NeuronAI\Chat\History\ChatHistoryInterface|null
      */
     public function resolve(?string $conversationReference, array $chatHistoryConfiguration): ?ChatHistoryInterface
     {
@@ -42,10 +39,7 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
     }
 
     /**
-     * @param string $conversationReference
      * @param array<string, mixed> $chatHistoryConfiguration
-     *
-     * @return \Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistory\DbChatHistory
      */
     protected function createDbChatHistory(string $conversationReference, array $chatHistoryConfiguration): DbChatHistory
     {

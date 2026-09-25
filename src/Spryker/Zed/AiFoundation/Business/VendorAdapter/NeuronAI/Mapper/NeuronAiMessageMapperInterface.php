@@ -28,8 +28,6 @@ interface NeuronAiMessageMapperInterface
     public function mapProviderMessagesToPromptMessages(array $messages): array;
 
     /**
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer $structuredResponseTransfer
-     *
      * @return array<string, mixed>
      */
     public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array;

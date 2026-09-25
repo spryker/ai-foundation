@@ -23,6 +23,7 @@ interface PostToolCallPluginInterface
      * Specification:
      * - Executes after each individual AI tool call within a prompt lifecycle.
      * - Receives AiToolCallTransfer containing tool name, arguments, result, and prompt request context.
+     * - Receives AiToolCallTransfer.toolCallId as the identifier the AI provider generated for this call, or null when the provider returns none.
      * - Must not mutate the tool result.
      *
      * @api

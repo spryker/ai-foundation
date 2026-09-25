@@ -31,6 +31,12 @@ use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowS
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\StateMachineHandler\AiWorkflowStateMachineItemUpdaterInterface;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemUpdater;
 use Spryker\Zed\AiFoundation\Business\AiWorkflow\Updater\AiWorkflowItemUpdaterInterface;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ChatSessionInitializer;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ChatSessionInitializerInterface;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ConversationHistoryDeleter;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ConversationHistoryDeleterInterface;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ConversationHistoryWriter;
+use Spryker\Zed\AiFoundation\Business\ChatSession\ConversationHistoryWriterInterface;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapper;
 use Spryker\Zed\AiFoundation\Business\Mapper\TransferJsonSchemaMapperInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
@@ -56,6 +62,28 @@ use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
  */
 class AiFoundationBusinessFactory extends AbstractBusinessFactory
 {
+    public function createChatSessionInitializer(): ChatSessionInitializerInterface
+    {
+        return new ChatSessionInitializer(
+            repository: $this->getRepository(),
+            config: $this->getConfig(),
+        );
+    }
+
+    public function createConversationHistoryWriter(): ConversationHistoryWriterInterface
+    {
+        return new ConversationHistoryWriter(
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
+    public function createConversationHistoryDeleter(): ConversationHistoryDeleterInterface
+    {
+        return new ConversationHistoryDeleter(
+            entityManager: $this->getEntityManager(),
+        );
+    }
+
     public function getVendorAdapterPlugin(): VendorProviderPluginInterface
     {
         return $this->getProvidedDependency(AiFoundationDependencyProvider::PLUGIN_VENDOR_PROVIDER);

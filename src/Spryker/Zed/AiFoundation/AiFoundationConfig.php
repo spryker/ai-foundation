@@ -21,6 +21,9 @@ class AiFoundationConfig extends AbstractBundleConfig
      * - When the conversation history exceeds this limit, the oldest messages are automatically pruned to stay within the limit.
      * - This limit is applied per conversation, not globally across all conversations.
      * - Helps prevent storage overflow and ensures conversation history fits within AI model context limits.
+     * - The serialized history measures roughly 12 bytes per counted token, because the envelope (message ids,
+     *   roles, tool call arguments and results, usage blocks, escaping) is persisted but not token counted, so
+     *   this window is persisted into a `LONGTEXT` column rather than the `TEXT` one it would overflow.
      */
     protected const int DEFAULT_CONVERSATION_HISTORY_CONTEXT_WINDOW = 50000;
 
@@ -68,6 +71,21 @@ class AiFoundationConfig extends AbstractBundleConfig
     public function getConversationHistoryContextWindow(): int
     {
         return $this->get(AiFoundationConstants::CONVERSATION_HISTORY_CONTEXT_WINDOW, static::DEFAULT_CONVERSATION_HISTORY_CONTEXT_WINDOW);
+    }
+
+    /**
+     * Specification:
+     * - Returns the AI configuration names a Client-layer caller is allowed to resolve through the gateway.
+     * - Returns an empty array by default, so no configuration is resolvable until a project opts one in.
+     * - A configuration name absent from this list is rejected with an unsuccessful response.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getClientResolvableAiConfigurationNames(): array
+    {
+        return [];
     }
 
     /**

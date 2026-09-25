@@ -22,6 +22,7 @@ use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Chat\Messages\ToolResultMessage;
 use NeuronAI\Providers\AIProviderInterface;
+use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolInterface;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver\ChatHistoryResolverInterface;
@@ -71,6 +72,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     protected const string AI_CONVERSATION_HISTORY_CONFIG = 'conversation_history';
 
     protected const string AI_PROVIDER_CONFIG_MODEL = 'model';
+
+    protected const string TOOL_SKIPPED_RESULT = 'The tool was not executed because it was not permitted.';
 
     /**
      * @param array<string, array<string, mixed>> $aiConfigurations
@@ -236,9 +239,6 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     }
 
     /**
-     * @param \NeuronAI\Chat\History\ChatHistoryInterface|null $chatHistory
-     * @param \NeuronAI\Chat\Messages\Message $message
-     *
      * @return array<\NeuronAI\Chat\Messages\Message>
      */
     protected function prepareConversationMessages(?ChatHistoryInterface $chatHistory, Message $message): array
@@ -250,11 +250,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     }
 
     /**
-     * @param \NeuronAI\Chat\History\ChatHistoryInterface $chatHistory
      * @param array<\NeuronAI\Chat\Messages\Message> $conversationMessages
-     * @param \NeuronAI\Chat\Messages\Message $response
-     *
-     * @return void
      */
     protected function persistConversationMessages(
         ChatHistoryInterface $chatHistory,
@@ -382,9 +378,14 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
 
             $aiToolCallTransfer = $this->executePreToolCallPlugins($aiToolCallTransfer);
 
-            if ($aiToolCallTransfer->getIsExecutionAllowed() !== false) {
-                $tool->execute();
+            if ($aiToolCallTransfer->getIsExecutionAllowed() === false) {
+                $this->setToolResult($tool, static::TOOL_SKIPPED_RESULT);
+                $this->executePostToolCallPlugins($aiToolCallTransfer);
+
+                continue;
             }
+
+            $tool->execute();
 
             $aiToolCallTransfer->setToolResult($tool->getResult());
 
@@ -394,11 +395,21 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         return $tools;
     }
 
+    protected function setToolResult(ToolInterface $tool, string $result): void
+    {
+        if (!$tool instanceof Tool) {
+            return;
+        }
+
+        $tool->setResult($result);
+    }
+
     protected function createAiToolCallTransfer(
         ToolInterface $tool,
         PromptRequestTransfer $promptRequestTransfer,
     ): AiToolCallTransfer {
         return (new AiToolCallTransfer())
+            ->setToolCallId($tool->getCallId())
             ->setToolName($tool->getName())
             ->setToolArguments($tool->getInputs())
             ->setPromptRequest($promptRequestTransfer)
@@ -458,12 +469,8 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     }
 
     /**
-     * @param \Generated\Shared\Transfer\PromptResponseTransfer $promptResponseTransfer
      * @param array<\Throwable> $exceptions
      * @param array<string|null> $responseContents
-     * @param string|null $entityIdentifier
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     protected function addErrorsToResponse(
         PromptResponseTransfer $promptResponseTransfer,

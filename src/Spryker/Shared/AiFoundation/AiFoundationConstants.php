@@ -114,6 +114,15 @@ interface AiFoundationConstants
 
     /**
      * Specification:
+     * - Defines the provider name for the OpenAI Responses API.
+     * - Required to combine tools with reasoning and to stream reasoning summaries, which the Chat Completions API of the `openai` provider does not support.
+     *
+     * @api
+     */
+    public const string PROVIDER_OPENAI_RESPONSES = 'openai_responses';
+
+    /**
+     * Specification:
      * - Defines the attachment type for document attachments.
      *
      * @api

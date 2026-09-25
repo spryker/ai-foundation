@@ -13,8 +13,6 @@ interface ProviderResolverInterface
 {
     /**
      * @param array<string, mixed> $config
-     *
-     * @return \NeuronAI\Providers\AIProviderInterface
      */
     public function resolve(string $providerName, array $config): AIProviderInterface;
 }

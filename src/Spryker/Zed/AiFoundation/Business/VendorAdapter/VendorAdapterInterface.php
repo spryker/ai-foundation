@@ -27,10 +27,6 @@ interface VendorAdapterInterface
      * - errors: populated with error details if request failed
      * - message: regular response message (if no structured schema)
      * - structuredMessage: structured response (if structured schema provided)
-     *
-     * @param \Generated\Shared\Transfer\PromptRequestTransfer $promptRequest
-     *
-     * @return \Generated\Shared\Transfer\PromptResponseTransfer
      */
     public function prompt(PromptRequestTransfer $promptRequest): PromptResponseTransfer;
 
@@ -42,10 +38,6 @@ interface VendorAdapterInterface
      * Each conversation history includes conversation ID and all messages in the conversation.
      * Each message includes role (user, assistant, tool_call, tool_result), content, and attachments.
      * Returns empty collection if no conversations exist or all have expired.
-     *
-     * @param \Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\ConversationHistoryCollectionTransfer
      */
     public function getConversationHistoryCollection(
         ConversationHistoryCriteriaTransfer $conversationHistoryCriteriaTransfer

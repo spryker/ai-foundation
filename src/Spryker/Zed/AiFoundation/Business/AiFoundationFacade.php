@@ -16,6 +16,11 @@ use Generated\Shared\Transfer\AiWorkflowItemCollectionRequestTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionResponseTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCollectionTransfer;
 use Generated\Shared\Transfer\AiWorkflowItemCriteriaTransfer;
+use Generated\Shared\Transfer\ChatSessionRequestTransfer;
+use Generated\Shared\Transfer\ChatSessionResponseTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionDeleteCriteriaTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionRequestTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
@@ -53,6 +58,44 @@ class AiFoundationFacade extends AbstractFacade implements AiFoundationFacadeInt
             ->getVendorAdapterPlugin()
             ->getVendorAdapter()
             ->getConversationHistoryCollection($conversationHistoryCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function initChatSession(ChatSessionRequestTransfer $chatSessionRequestTransfer): ChatSessionResponseTransfer
+    {
+        return $this->getFactory()
+            ->createChatSessionInitializer()
+            ->initChatSession($chatSessionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function saveConversationHistoryCollection(
+        ConversationHistoryCollectionRequestTransfer $conversationHistoryCollectionRequestTransfer
+    ): ConversationHistoryCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createConversationHistoryWriter()
+            ->saveConversationHistoryCollection($conversationHistoryCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function deleteConversationHistoryCollection(
+        ConversationHistoryCollectionDeleteCriteriaTransfer $conversationHistoryCollectionDeleteCriteriaTransfer
+    ): ConversationHistoryCollectionResponseTransfer {
+        return $this->getFactory()
+            ->createConversationHistoryDeleter()
+            ->deleteConversationHistoryCollection($conversationHistoryCollectionDeleteCriteriaTransfer);
     }
 
     /**

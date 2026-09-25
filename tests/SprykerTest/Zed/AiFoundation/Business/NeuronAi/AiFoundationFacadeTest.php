@@ -7,11 +7,15 @@
 
 namespace SprykerTest\Zed\AiFoundation\Business\NeuronAi;
 
+use Aws\CommandInterface;
+use Aws\Result;
 use Aws\Token\BedrockTokenProvider;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\AttachmentTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use InvalidArgumentException;
 use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\Messages\AssistantMessage;
@@ -23,6 +27,7 @@ use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Providers\AWS\BedrockRuntime;
+use NeuronAI\Providers\OpenAI\Responses\OpenAIResponses;
 use ReflectionProperty;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
@@ -72,6 +77,15 @@ class AiFoundationFacadeTest extends Unit
     protected const string TEST_BEDROCK_REGION = 'eu-west-1';
 
     protected const string TEST_BEDROCK_BEARER_TOKEN = 'bedrock-api-key-test-bearer-value';
+
+    protected const string BEDROCK_COMMAND_KEY_ADDITIONAL_MODEL_REQUEST_FIELDS = 'additionalModelRequestFields';
+
+    protected const array TEST_BEDROCK_THINKING_FIELDS = [
+        'thinking' => [
+            'type' => 'enabled',
+            'budget_tokens' => 2048,
+        ],
+    ];
 
     protected AiFoundationBusinessTester $tester;
 
@@ -292,6 +306,16 @@ class AiFoundationFacadeTest extends Unit
                     'parameters' => [],
                 ],
             ],
+            'OpenAI Responses provider' => [
+                'providerName' => AiFoundationConstants::PROVIDER_OPENAI_RESPONSES,
+                'providerConfig' => [
+                    'key' => 'sk-test-key',
+                    'model' => 'gpt-5',
+                    'parameters' => [
+                        'reasoning' => ['effort' => 'medium', 'summary' => 'auto'],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -313,6 +337,85 @@ class AiFoundationFacadeTest extends Unit
         // Assert
         $this->assertSame([BedrockTokenProvider::BEARER_AUTH], $client->getConfig('auth_scheme_preference'));
         $this->assertSame(static::TEST_BEDROCK_BEARER_TOKEN, $client->getToken()->wait()->getToken());
+    }
+
+    public function testGivenOpenAiResponsesProviderNameWhenResolvingThenResponsesApiProviderIsReturned(): void
+    {
+        // Arrange
+        $config = ['key' => 'sk-test-key', 'model' => 'gpt-5', 'parameters' => ['reasoning' => ['effort' => 'medium', 'summary' => 'auto']]];
+
+        // Act
+        $provider = (new ProviderResolver())->resolve(AiFoundationConstants::PROVIDER_OPENAI_RESPONSES, $config);
+
+        // Assert
+        $this->assertInstanceOf(OpenAIResponses::class, $provider);
+    }
+
+    public function testGivenBedrockConfigWithAdditionalModelRequestFieldsWhenConverseIsCalledThenFieldsAreSentWithTheCommand(): void
+    {
+        // Arrange
+        $config = $this->createBedrockProviderConfig();
+        $config[static::BEDROCK_COMMAND_KEY_ADDITIONAL_MODEL_REQUEST_FIELDS] = static::TEST_BEDROCK_THINKING_FIELDS;
+
+        // Act
+        $provider = (new ProviderResolver())->resolve(AiFoundationConstants::PROVIDER_BEDROCK, $config);
+
+        // Assert
+        $this->assertSame(
+            static::TEST_BEDROCK_THINKING_FIELDS,
+            $this->captureBedrockConverseCommand($provider)[static::BEDROCK_COMMAND_KEY_ADDITIONAL_MODEL_REQUEST_FIELDS],
+        );
+    }
+
+    public function testGivenBedrockConfigWithoutAdditionalModelRequestFieldsWhenConverseIsCalledThenCommandHasNoAdditionalModelRequestFields(): void
+    {
+        // Arrange
+        $config = $this->createBedrockProviderConfig();
+
+        // Act
+        $provider = (new ProviderResolver())->resolve(AiFoundationConstants::PROVIDER_BEDROCK, $config);
+
+        // Assert
+        $this->assertFalse($this->captureBedrockConverseCommand($provider)->hasParam(static::BEDROCK_COMMAND_KEY_ADDITIONAL_MODEL_REQUEST_FIELDS));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function createBedrockProviderConfig(): array
+    {
+        return [
+            'model' => static::TEST_BEDROCK_MODEL,
+            'bedrockRuntimeClient' => [
+                'region' => static::TEST_BEDROCK_REGION,
+                'token' => static::TEST_BEDROCK_BEARER_TOKEN,
+            ],
+        ];
+    }
+
+    /**
+     * Replaces the final HTTP handler of the client, so the command is captured after every middleware ran
+     * and no request leaves the test.
+     */
+    protected function captureBedrockConverseCommand(AIProviderInterface $provider): CommandInterface
+    {
+        $bedrockRuntimeClient = (new ReflectionProperty(BedrockRuntime::class, 'bedrockRuntimeClient'))->getValue($provider);
+        $capturedCommand = null;
+
+        $bedrockRuntimeClient->getHandlerList()->setHandler(
+            static function (CommandInterface $command) use (&$capturedCommand): PromiseInterface {
+                $capturedCommand = $command;
+
+                return Create::promiseFor(new Result([]));
+            },
+        );
+
+        $bedrockRuntimeClient->converse([
+            'modelId' => static::TEST_BEDROCK_MODEL,
+            'messages' => [['role' => 'user', 'content' => [['text' => static::TEST_USER_MESSAGE]]]],
+        ]);
+
+        return $capturedCommand;
     }
 
     public function testGivenPromptMessageHasSingleDocumentAttachmentWhenPromptingThenAttachmentIsMappedCorrectly(): void

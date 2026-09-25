@@ -10,8 +10,10 @@
         />
         <property name="aiConfigurationName" type="string" description="The configuration name of ai configuration"/>
         <property name="maxRetries" type="int" description="Maximum number of retry attempts for the request in case of failures. Defaults to 1."/>
-        <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names."/>
+        <property name="toolSetNames" type="string[]" singular="toolSetName" description="List of AI tool set names. Read by the Zed prompt path only; the Client streaming path uses toolNames."/>
+        <property name="toolNames" type="string[]" singular="toolName" description="List of AI tool names resolved against the Client-side tool plugin stack. Read by the Client streaming path only."/>
         <property name="conversationReference" type="string" description="Optional conversation identifier for chat history persistence. When provided, enables storage-backed conversation history."/>
+        <property name="systemPrompt" type="string" description="Overrides the system prompt of the resolved AI configuration when not empty."/>
     </transfer>
 
     <transfer name="PromptResponse" strict="true">
@@ -22,6 +24,7 @@
         <property name="provider" type="string" description="Resolved AI provider name from configuration."/>
         <property name="model" type="string" description="Resolved AI model name from provider configuration."/>
         <property name="inferenceTimeMs" type="int" description="Total wall-clock time in milliseconds for the full prompt() execution."/>
+        <property name="streamedContent" type="string" description="Content accumulated from the streamed tokens. Carries the partial reply when the stream ended before the provider produced a complete message."/>
     </transfer>
 
     <transfer name="PromptMessage" strict="true">
@@ -218,10 +221,52 @@
     </transfer>
 
     <transfer name="AiToolCall" strict="true">
+        <property name="toolCallId" type="string"/>
         <property name="toolName" type="string"/>
         <property name="toolArguments" type="array" singular="toolArgument"/>
         <property name="toolResult" type="string"/>
         <property name="promptRequest" type="PromptRequest"/>
         <property name="isExecutionAllowed" type="bool"/>
     </transfer>
+
+    <transfer name="AiConfiguration" strict="true">
+        <property name="name" type="string" description="The AI configuration name the resolved values belong to."/>
+        <property name="providerName" type="string" description="The AI provider identifier, e.g. openai, anthropic, bedrock."/>
+        <property name="providerConfig" type="array" singular="providerConfigItem" description="Provider specific configuration with configuration-management references already expanded."/>
+        <property name="systemPrompt" type="string" description="System prompt configured for the AI configuration."/>
+    </transfer>
+
+    <transfer name="ChatSessionRequest" strict="true">
+        <property name="aiConfigurationName" type="string" description="The AI configuration name to resolve. Must be present in the client resolvable allowlist."/>
+        <property name="conversationReference" type="string" description="Conversation identifier the chat history is loaded for."/>
+    </transfer>
+
+    <transfer name="ChatSessionResponse" strict="true">
+        <property name="aiConfiguration" type="AiConfiguration" description="The resolved AI configuration. Null when the request was rejected."/>
+        <property name="conversationHistory" type="ConversationHistory" description="The chat history of the conversation. Null when no history exists for it."/>
+        <property name="contextWindow" type="int" description="Maximum number of tokens to retain in the conversation history."/>
+        <property name="isSuccessful" type="bool" description="Indicates whether the chat session was initialized."/>
+        <property name="errors" type="Error[]" singular="error" description="List of errors encountered during initialization, if any."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryCollectionRequest" strict="true">
+        <property name="conversationHistories" type="ConversationHistory[]" singular="conversationHistory" description="Conversation histories to persist, each identified by its conversation reference."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryCollectionDeleteCriteria" strict="true">
+        <property name="conversationHistoryConditions" type="ConversationHistoryConditions" description="Conditions selecting the conversation histories to remove."/>
+    </transfer>
+
+    <transfer name="ConversationHistoryCollectionResponse" strict="true">
+        <property name="conversationHistories" type="ConversationHistory[]" singular="conversationHistory" description="The persisted conversation histories. Empty for a delete or when the request was rejected."/>
+        <property name="isSuccessful" type="bool" description="Indicates whether the operation succeeded."/>
+        <property name="errors" type="Error[]" singular="error" description="List of errors encountered during the operation, if any."/>
+    </transfer>
+
+    <transfer name="PromptStreamChunk" strict="true">
+        <property name="type" type="string" description="Chunk type: text, reasoning."/>
+        <property name="content" type="string" description="Incremental payload. For type=text this is a text delta, not a cumulative message."/>
+        <property name="error" type="Error" description="Error details for failed chunks."/>
+    </transfer>
+
 </transfers>
