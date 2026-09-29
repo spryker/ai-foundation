@@ -79,7 +79,7 @@ async function loadDetail(logId, content) {
         content.innerHTML = sanitizeHTML(
             await fetchHtml(`${AI_INTERACTION_LOG_DETAIL_BASE_PATH}?id=${encodeURIComponent(logId)}`),
         );
-    } catch (error) {
+    } catch {
         renderErrorMessage(content);
     }
 }
