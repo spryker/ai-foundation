@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\ConversationHistoryCollectionTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCriteriaTransfer;
 use Generated\Shared\Transfer\ConversationHistoryTransfer;
 use Generated\Shared\Transfer\ErrorTransfer;
+use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
 use NeuronAI\Chat\History\ChatHistoryInterface;
@@ -143,12 +144,14 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     ): PromptResponseTransfer {
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
+        $usages = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $conversationMessages = $this->prepareConversationMessages($chatHistory, $message);
 
             try {
                 $response = $provider->chat(...$conversationMessages);
+                $usages[] = $response->getUsage();
 
                 while ($response instanceof ToolCallMessage) {
                     $conversationMessages = $this->processToolCallAndUpdateHistory(
@@ -158,6 +161,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                     );
 
                     $response = $provider->chat(...$conversationMessages);
+                    $usages[] = $response->getUsage();
                 }
 
                 $promptResponseTransfer = $this->messageMapper->mapProviderResponseToPromptResponse($response);
@@ -173,7 +177,10 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             }
         }
 
-        return $this->finalizePromptResponse($promptResponseTransfer, $exceptions);
+        return $this->finalizePromptResponse(
+            $this->expandPromptResponseWithUsage($promptResponseTransfer, $usages),
+            $exceptions,
+        );
     }
 
     protected function executeStructuredPrompt(
@@ -190,6 +197,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         $promptResponseTransfer = new PromptResponseTransfer();
         $exceptions = [];
         $responseContents = [];
+        $usages = [];
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             $response = null;
@@ -198,6 +206,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
 
             try {
                 $response = $provider->structured($conversationMessages, $structuredSchemaClass, $structuredResponseFormat);
+                $usages[] = $response->getUsage();
 
                 while ($response instanceof ToolCallMessage) {
                     $conversationMessages = $this->processToolCallAndUpdateHistory(
@@ -207,6 +216,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
                     );
 
                     $response = $provider->structured($conversationMessages, $structuredSchemaClass, $structuredResponseFormat);
+                    $usages[] = $response->getUsage();
                 }
 
                 $responseContents[] = $response->getContent() ?? 'No content';
@@ -235,7 +245,30 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             }
         }
 
-        return $this->finalizePromptResponse($promptResponseTransfer, $exceptions, $responseContents, get_class($structuredSchema));
+        return $this->finalizePromptResponse(
+            $this->expandPromptResponseWithUsage($promptResponseTransfer, $usages),
+            $exceptions,
+            $responseContents,
+            get_class($structuredSchema),
+        );
+    }
+
+    /**
+     * @param array<\NeuronAI\Chat\Messages\Usage|null> $usages
+     */
+    protected function expandPromptResponseWithUsage(
+        PromptResponseTransfer $promptResponseTransfer,
+        array $usages,
+    ): PromptResponseTransfer {
+        $usageTransfer = $this->messageMapper->mapUsagesToUsageTransfer($usages);
+
+        if ($usageTransfer === null) {
+            return $promptResponseTransfer;
+        }
+
+        $promptMessageTransfer = $promptResponseTransfer->getMessage() ?? new PromptMessageTransfer();
+
+        return $promptResponseTransfer->setMessage($promptMessageTransfer->setUsage($usageTransfer));
     }
 
     /**

@@ -9,6 +9,7 @@ namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper;
 
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptResponseTransfer;
+use Generated\Shared\Transfer\UsageTransfer;
 use NeuronAI\Chat\Messages\Message;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 
@@ -33,4 +34,9 @@ interface NeuronAiMessageMapperInterface
     public function mapTransferToStructuredResponseFormat(AbstractTransfer $structuredResponseTransfer): array;
 
     public function mapProviderStructuredResponseToTransfer(Message $message, AbstractTransfer $structuredResponseTransfer): AbstractTransfer;
+
+    /**
+     * @param array<\NeuronAI\Chat\Messages\Usage|null> $usages
+     */
+    public function mapUsagesToUsageTransfer(array $usages): ?UsageTransfer;
 }

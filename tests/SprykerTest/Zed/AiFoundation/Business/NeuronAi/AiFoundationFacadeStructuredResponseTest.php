@@ -11,7 +11,9 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Providers\AIProviderInterface;
+use RuntimeException;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
@@ -54,6 +56,16 @@ class AiFoundationFacadeStructuredResponseTest extends Unit
     protected const string TEST_SYSTEM_PROMPT = 'You are a test assistant.';
 
     protected const string TEST_USER_MESSAGE = 'Analyze this code branch.';
+
+    protected const string INVALID_JSON_CONTENT = 'invalid json';
+
+    protected const int FAILED_ATTEMPT_INPUT_TOKENS = 100;
+
+    protected const int FAILED_ATTEMPT_OUTPUT_TOKENS = 10;
+
+    protected const int SUCCESSFUL_ATTEMPT_INPUT_TOKENS = 150;
+
+    protected const int SUCCESSFUL_ATTEMPT_OUTPUT_TOKENS = 20;
 
     protected AiFoundationBusinessTester $tester;
 
@@ -374,6 +386,58 @@ class AiFoundationFacadeStructuredResponseTest extends Unit
         $this->assertSame('/src/path/three.php', $result->getAiResponsePaths()->offsetGet(2)->getPath());
     }
 
+    public function testGivenFailedMappingThenSuccessWhenPromptStructuredThenUsageIsSumOfAllAttempts(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer()->setStructuredMessage(new AiResponseTransfer())->setMaxRetries(2);
+        $mockProvider = $this->createMockProviderReturningStructuredMessages([
+            $this->createUnmappableMessageWithUsage(),
+            (new AssistantMessage($this->createValidStructuredResponseJson()))->setUsage(new Usage(static::SUCCESSFUL_ATTEMPT_INPUT_TOKENS, static::SUCCESSFUL_ATTEMPT_OUTPUT_TOKENS)),
+        ]);
+
+        // Act
+        $promptResponse = $this->createFacadeWithMockedProvider($mockProvider)->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($promptResponse->getIsSuccessful());
+        $this->assertSame(static::FAILED_ATTEMPT_INPUT_TOKENS + static::SUCCESSFUL_ATTEMPT_INPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::FAILED_ATTEMPT_OUTPUT_TOKENS + static::SUCCESSFUL_ATTEMPT_OUTPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
+    public function testGivenFailedMappingOnEveryAttemptWhenPromptStructuredThenFailedResponseContainsUsageOfAllAttempts(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer()->setStructuredMessage(new AiResponseTransfer())->setMaxRetries(2);
+        $mockProvider = $this->createMockProviderReturningStructuredMessages([
+            $this->createUnmappableMessageWithUsage(),
+            $this->createUnmappableMessageWithUsage(),
+        ]);
+
+        // Act
+        $promptResponse = $this->createFacadeWithMockedProvider($mockProvider)->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertFalse($promptResponse->getIsSuccessful());
+        $this->assertSame(static::FAILED_ATTEMPT_INPUT_TOKENS * 2, $promptResponse->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::FAILED_ATTEMPT_OUTPUT_TOKENS * 2, $promptResponse->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
+    public function testGivenProviderThrowsOnEveryAttemptWhenPromptStructuredThenFailedResponseHasNoMessage(): void
+    {
+        // Arrange
+        $promptRequestTransfer = $this->createPromptRequestTransfer()->setStructuredMessage(new AiResponseTransfer())->setMaxRetries(2);
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('structured')->willThrowException(new RuntimeException('Provider is not available.'));
+
+        // Act
+        $promptResponse = $this->createFacadeWithMockedProvider($mockProvider)->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertFalse($promptResponse->getIsSuccessful());
+        $this->assertCount(2, $promptResponse->getErrors());
+        $this->assertNull($promptResponse->getMessage());
+    }
+
     protected function createPromptRequestTransfer(): PromptRequestTransfer
     {
         $promptMessageTransfer = (new PromptMessageTransfer())
@@ -439,6 +503,28 @@ class AiFoundationFacadeStructuredResponseTest extends Unit
         $mockProvider->method('structured')->willReturn(new AssistantMessage($responseJson));
 
         return $mockProvider;
+    }
+
+    /**
+     * @param list<\NeuronAI\Chat\Messages\Message> $messages
+     */
+    protected function createMockProviderReturningStructuredMessages(array $messages): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->expects($this->exactly(count($messages)))
+            ->method('structured')
+            ->willReturnOnConsecutiveCalls(...$messages);
+
+        return $mockProvider;
+    }
+
+    protected function createUnmappableMessageWithUsage(): AssistantMessage
+    {
+        $message = new AssistantMessage(static::INVALID_JSON_CONTENT);
+        $message->setUsage(new Usage(static::FAILED_ATTEMPT_INPUT_TOKENS, static::FAILED_ATTEMPT_OUTPUT_TOKENS));
+
+        return $message;
     }
 
     protected function createValidStructuredResponseJson(): string

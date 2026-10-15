@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Spryker\Client\AiFoundation\VendorAdapter\NeuronAI;
 
+use ArrayObject;
 use Generated\Shared\Transfer\AiConfigurationTransfer;
 use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\ChatSessionRequestTransfer;
@@ -139,30 +140,45 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         );
 
         $startedAt = microtime(true);
+        $usages = new ArrayObject();
 
         try {
             $message = $this->executeStream(
                 $promptRequestTransfer,
                 $aiConfigurationTransfer,
                 $chatHistory,
+                $usages,
             );
 
             if ($message instanceof ToolCallMessage) {
-                return $this->handleToolLoopExhaustion($aiConfigurationTransfer, $startedAt);
+                return $this->expandPromptResponseWithUsage(
+                    $this->handleToolLoopExhaustion($aiConfigurationTransfer, $startedAt),
+                    $usages,
+                );
             }
 
             $chatHistory->addMessage($message);
 
-            return $this->createSuccessfulPromptResponse($message, $aiConfigurationTransfer, $startedAt);
+            return $this->expandPromptResponseWithUsage(
+                $this->createSuccessfulPromptResponse($message, $aiConfigurationTransfer, $startedAt),
+                $usages,
+            );
         } catch (Throwable $throwable) {
-            return $this->handleStreamFailure($throwable, $aiConfigurationTransfer, $startedAt);
+            return $this->expandPromptResponseWithUsage(
+                $this->handleStreamFailure($throwable, $aiConfigurationTransfer, $startedAt),
+                $usages,
+            );
         }
     }
 
+    /**
+     * @param \ArrayObject<int, \NeuronAI\Chat\Messages\Usage|null> $usages
+     */
     protected function executeStream(
         PromptRequestTransfer $promptRequestTransfer,
         AiConfigurationTransfer $aiConfigurationTransfer,
-        ChatHistoryInterface $chatHistory
+        ChatHistoryInterface $chatHistory,
+        ArrayObject $usages
     ): Message {
         $provider = $this->clientProviderResolver->resolve(
             (string)$aiConfigurationTransfer->getProviderName(),
@@ -177,15 +193,20 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
 
         $this->setToolsToProvider($provider, $promptRequestTransfer);
 
-        return $this->runToolLoop($provider, $chatHistory, $promptRequestTransfer);
+        return $this->runToolLoop($provider, $chatHistory, $promptRequestTransfer, $usages);
     }
 
+    /**
+     * @param \ArrayObject<int, \NeuronAI\Chat\Messages\Usage|null> $usages
+     */
     protected function runToolLoop(
         AIProviderInterface $provider,
         ChatHistoryInterface $chatHistory,
-        PromptRequestTransfer $promptRequestTransfer
+        PromptRequestTransfer $promptRequestTransfer,
+        ArrayObject $usages
     ): Message {
         $message = $this->consumeStream($provider, $chatHistory, $promptRequestTransfer);
+        $usages->append($message->getUsage());
 
         $iteration = 0;
 
@@ -198,6 +219,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             $chatHistory->addMessage(new ToolResultMessage($executedTools));
 
             $message = $this->consumeStream($provider, $chatHistory, $promptRequestTransfer);
+            $usages->append($message->getUsage());
         }
 
         return $message;
@@ -532,6 +554,24 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
             $aiConfigurationTransfer,
             $startedAt,
         );
+    }
+
+    /**
+     * @param \ArrayObject<int, \NeuronAI\Chat\Messages\Usage|null> $usages
+     */
+    protected function expandPromptResponseWithUsage(
+        PromptResponseTransfer $promptResponseTransfer,
+        ArrayObject $usages
+    ): PromptResponseTransfer {
+        $usageTransfer = $this->neuronAiMessageMapper->mapUsagesToUsageTransfer($usages->getArrayCopy());
+
+        if ($usageTransfer === null) {
+            return $promptResponseTransfer;
+        }
+
+        $promptMessageTransfer = $promptResponseTransfer->getMessage() ?? new PromptMessageTransfer();
+
+        return $promptResponseTransfer->setMessage($promptMessageTransfer->setUsage($usageTransfer));
     }
 
     protected function expandPromptResponseWithProviderContext(

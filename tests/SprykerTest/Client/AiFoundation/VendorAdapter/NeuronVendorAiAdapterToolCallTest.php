@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\ChatSessionResponseTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Tools\Tool;
 use RuntimeException;
 use Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface;
@@ -68,6 +69,14 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
     protected const int MAX_TOOL_LOOP_ITERATIONS = 5;
 
     protected const string UNREGISTERED_TOOL_NAME = 'unregistered_tool';
+
+    protected const int TOOL_CALL_INPUT_TOKENS = 100;
+
+    protected const int TOOL_CALL_OUTPUT_TOKENS = 10;
+
+    protected const int FINAL_INPUT_TOKENS = 150;
+
+    protected const int FINAL_OUTPUT_TOKENS = 20;
 
     protected AiFoundationClientTester $tester;
 
@@ -348,6 +357,49 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
         $this->assertTrue($promptResponseTransfer->getIsSuccessful());
     }
 
+    public function testGivenToolCallWithUsageWhenStreamingPromptThenResponseUsageIsSumOfAllRoundTrips(): void
+    {
+        // Arrange
+        $adapter = $this->createAdapterWithUsage([[$this->createTool()]]);
+
+        // Act
+        $promptResponseTransfer = $adapter->streamPrompt($this->createPromptRequestTransfer());
+
+        // Assert
+        $this->assertTrue($promptResponseTransfer->getIsSuccessful());
+        $this->assertSame(static::TOOL_CALL_INPUT_TOKENS + static::FINAL_INPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::TOOL_CALL_OUTPUT_TOKENS + static::FINAL_OUTPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
+    public function testGivenEndlessToolCallsWithUsageWhenStreamingPromptThenResponseUsageIsSumOfAllRoundTrips(): void
+    {
+        // Arrange
+        $roundTripCount = static::MAX_TOOL_LOOP_ITERATIONS + 1;
+        $adapter = $this->createAdapterWithUsage(array_fill(0, $roundTripCount, [$this->createTool()]));
+
+        // Act
+        $promptResponseTransfer = $adapter->streamPrompt($this->createPromptRequestTransfer());
+
+        // Assert
+        $this->assertFalse($promptResponseTransfer->getIsSuccessful());
+        $this->assertSame($roundTripCount * static::TOOL_CALL_INPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame($roundTripCount * static::TOOL_CALL_OUTPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
+    public function testGivenStreamFailureAfterToolCallWithUsageWhenStreamingPromptThenResponseUsageIsSumOfCompletedRoundTrips(): void
+    {
+        // Arrange
+        $adapter = $this->createAdapterWithUsage([[$this->createTool()]], true);
+
+        // Act
+        $promptResponseTransfer = $adapter->streamPrompt($this->createPromptRequestTransfer());
+
+        // Assert
+        $this->assertFalse($promptResponseTransfer->getIsSuccessful());
+        $this->assertSame(static::TOOL_CALL_INPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::TOOL_CALL_OUTPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
     protected function createToolPlugin(string $toolName): ToolPluginInterface
     {
         $toolPluginMock = $this->createMock(ToolPluginInterface::class);
@@ -414,13 +466,44 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
         array $postToolCallPlugins = [],
         array $aiToolPlugins = []
     ): NeuronVendorAiAdapter {
+        return $this->createAdapterForProvider(
+            new ScriptedToolCallAiProvider($toolCallRounds, static::FINAL_ANSWER),
+            $preToolCallPlugins,
+            $postToolCallPlugins,
+            $aiToolPlugins,
+        );
+    }
+
+    /**
+     * @param array<int, array<int, \NeuronAI\Tools\ToolInterface>> $toolCallRounds
+     */
+    protected function createAdapterWithUsage(array $toolCallRounds, bool $isFinalRoundFailing = false): NeuronVendorAiAdapter
+    {
+        return $this->createAdapterForProvider(new ScriptedToolCallAiProvider(
+            $toolCallRounds,
+            static::FINAL_ANSWER,
+            new Usage(static::TOOL_CALL_INPUT_TOKENS, static::TOOL_CALL_OUTPUT_TOKENS),
+            new Usage(static::FINAL_INPUT_TOKENS, static::FINAL_OUTPUT_TOKENS),
+            $isFinalRoundFailing,
+        ));
+    }
+
+    /**
+     * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
+     * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins
+     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
+     */
+    protected function createAdapterForProvider(
+        ScriptedToolCallAiProvider $scriptedToolCallAiProvider,
+        array $preToolCallPlugins = [],
+        array $postToolCallPlugins = [],
+        array $aiToolPlugins = []
+    ): NeuronVendorAiAdapter {
         $aiFoundationStubMock = $this->createMock(AiFoundationStubInterface::class);
         $aiFoundationStubMock->method('initChatSession')->willReturn($this->createChatSessionResponseTransfer());
 
         $clientProviderResolverMock = $this->createMock(ClientProviderResolverInterface::class);
-        $clientProviderResolverMock->method('resolve')->willReturn(
-            new ScriptedToolCallAiProvider($toolCallRounds, static::FINAL_ANSWER),
-        );
+        $clientProviderResolverMock->method('resolve')->willReturn($scriptedToolCallAiProvider);
 
         return new NeuronVendorAiAdapter(
             $aiFoundationStubMock,

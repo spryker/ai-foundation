@@ -12,6 +12,7 @@ use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use NeuronAI\Chat\Messages\AssistantMessage;
 use NeuronAI\Chat\Messages\ToolCallMessage;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\Tool;
 use Spryker\Shared\AiFoundation\AiFoundationConstants;
@@ -62,6 +63,18 @@ class AiFoundationFacadeToolCallTest extends Unit
     protected const string TEST_TOOL_SET_NAME = 'test_tool_set';
 
     protected const string TEST_TOOL_RESULT = '42';
+
+    protected const string PROVIDER_METHOD_CHAT = 'chat';
+
+    protected const string PROVIDER_METHOD_STRUCTURED = 'structured';
+
+    protected const int TOOL_CALL_INPUT_TOKENS = 100;
+
+    protected const int TOOL_CALL_OUTPUT_TOKENS = 10;
+
+    protected const int FINAL_INPUT_TOKENS = 150;
+
+    protected const int FINAL_OUTPUT_TOKENS = 20;
 
     protected AiFoundationBusinessTester $tester;
 
@@ -127,19 +140,7 @@ class AiFoundationFacadeToolCallTest extends Unit
             ->setStructuredMessage($structuredSchema)
             ->addToolSetName(static::TEST_TOOL_SET_NAME);
 
-        $responseJson = json_encode([
-            'rand_string' => 'Test with tool call',
-            'any_object' => [
-                'branch' => 'feature/tool-call',
-                'message' => 'Tool call executed successfully',
-            ],
-            'array_of_strings' => ['tool', 'test'],
-            'ai_response_paths' => [
-                ['path' => '/src/test.php'],
-            ],
-        ]);
-
-        $mockProvider = $this->createMockProviderWithStructuredResponseAndToolCall($testTool, $responseJson);
+        $mockProvider = $this->createMockProviderWithStructuredResponseAndToolCall($testTool, $this->createStructuredResponseJson());
         $facade = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool]);
 
         // Act
@@ -166,6 +167,40 @@ class AiFoundationFacadeToolCallTest extends Unit
 
         // Assert
         $this->assertTrue($promptResponse->getIsSuccessful());
+    }
+
+    public function testGivenToolCallWhenPromptThenResponseUsageIsSumOfAllRoundTrips(): void
+    {
+        // Arrange
+        $testTool = $this->createTestTool();
+        $promptRequestTransfer = $this->createPromptRequestTransfer()->addToolSetName(static::TEST_TOOL_SET_NAME);
+        $mockProvider = $this->createMockProviderWithToolCallUsage($testTool, static::PROVIDER_METHOD_CHAT, 'Tool executed successfully');
+
+        // Act
+        $promptResponse = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool])->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($promptResponse->getIsSuccessful());
+        $this->assertSame(static::TOOL_CALL_INPUT_TOKENS + static::FINAL_INPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::TOOL_CALL_OUTPUT_TOKENS + static::FINAL_OUTPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
+    }
+
+    public function testGivenStructuredResponseWithToolCallWhenPromptThenResponseUsageIsSumOfAllRoundTrips(): void
+    {
+        // Arrange
+        $testTool = $this->createTestTool();
+        $promptRequestTransfer = $this->createPromptRequestTransfer()
+            ->setStructuredMessage(new AiResponseTransfer())
+            ->addToolSetName(static::TEST_TOOL_SET_NAME);
+        $mockProvider = $this->createMockProviderWithToolCallUsage($testTool, static::PROVIDER_METHOD_STRUCTURED, $this->createStructuredResponseJson());
+
+        // Act
+        $promptResponse = $this->createFacadeWithMockedProviderAndTools($mockProvider, [$testTool])->prompt($promptRequestTransfer);
+
+        // Assert
+        $this->assertTrue($promptResponse->getIsSuccessful());
+        $this->assertSame(static::TOOL_CALL_INPUT_TOKENS + static::FINAL_INPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getInputTokens());
+        $this->assertSame(static::TOOL_CALL_OUTPUT_TOKENS + static::FINAL_OUTPUT_TOKENS, $promptResponse->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
     }
 
     protected function createTestTool(): Tool
@@ -222,6 +257,9 @@ class AiFoundationFacadeToolCallTest extends Unit
         return $mockProvider;
     }
 
+    /**
+     * @param array<string, mixed> $arguments
+     */
     protected function createMockProviderWithToolCallAndArguments(Tool $tool, array $arguments): AIProviderInterface
     {
         $mockProvider = $this->createMock(AIProviderInterface::class);
@@ -260,6 +298,36 @@ class AiFoundationFacadeToolCallTest extends Unit
             );
 
         return $mockProvider;
+    }
+
+    protected function createMockProviderWithToolCallUsage(Tool $tool, string $providerMethod, string $finalContent): AIProviderInterface
+    {
+        $mockProvider = $this->createMock(AIProviderInterface::class);
+        $mockProvider->method('systemPrompt')->willReturnSelf();
+        $mockProvider->method('setTools')->willReturnSelf();
+
+        $mockProvider->method($providerMethod)
+            ->willReturnOnConsecutiveCalls(
+                (new ToolCallMessage('Calling tool', [$tool]))->setUsage(new Usage(static::TOOL_CALL_INPUT_TOKENS, static::TOOL_CALL_OUTPUT_TOKENS)),
+                (new AssistantMessage($finalContent))->setUsage(new Usage(static::FINAL_INPUT_TOKENS, static::FINAL_OUTPUT_TOKENS)),
+            );
+
+        return $mockProvider;
+    }
+
+    protected function createStructuredResponseJson(): string
+    {
+        return (string)json_encode([
+            'rand_string' => 'Test with tool call',
+            'any_object' => [
+                'branch' => 'feature/tool-call',
+                'message' => 'Tool call executed successfully',
+            ],
+            'array_of_strings' => ['tool', 'test'],
+            'ai_response_paths' => [
+                ['path' => '/src/test.php'],
+            ],
+        ]);
     }
 
     protected function createMockProviderWithoutToolCall(): AIProviderInterface
@@ -313,7 +381,10 @@ class AiFoundationFacadeToolCallTest extends Unit
             $mockVendorProviderPlugin,
         );
 
-        return $this->tester->getFacade();
+        /** @var \Spryker\Zed\AiFoundation\Business\AiFoundationFacade $aiFoundationFacade */
+        $aiFoundationFacade = $this->tester->getFacade();
+
+        return $aiFoundationFacade;
     }
 
     protected function createMockConfig(): AiFoundationConfig

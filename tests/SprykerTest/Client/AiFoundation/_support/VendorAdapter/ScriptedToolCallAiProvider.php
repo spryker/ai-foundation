@@ -14,6 +14,7 @@ use NeuronAI\Chat\Messages\AssistantMessage;
 use NeuronAI\Chat\Messages\Message;
 use NeuronAI\Chat\Messages\Stream\Chunks\TextChunk;
 use NeuronAI\Chat\Messages\ToolCallMessage;
+use NeuronAI\Chat\Messages\Usage;
 use NeuronAI\HttpClient\HttpClientInterface;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Providers\MessageMapperInterface;
@@ -32,6 +33,8 @@ class ScriptedToolCallAiProvider implements AIProviderInterface
 
     protected const string ERROR_MESSAGE_NOT_SUPPORTED = 'The scripted provider only supports streaming.';
 
+    protected const string ERROR_MESSAGE_FINAL_ROUND_FAILED = 'The scripted final round failed.';
+
     protected int $streamCount = 0;
 
     /**
@@ -39,7 +42,10 @@ class ScriptedToolCallAiProvider implements AIProviderInterface
      */
     public function __construct(
         protected array $toolCallRounds = [],
-        protected string $finalAnswer = ''
+        protected string $finalAnswer = '',
+        protected ?Usage $toolCallUsage = null,
+        protected ?Usage $finalUsage = null,
+        protected bool $isFinalRoundFailing = false
     ) {
     }
 
@@ -62,12 +68,25 @@ class ScriptedToolCallAiProvider implements AIProviderInterface
         $this->streamCount++;
 
         if ($tools !== null) {
-            return new ToolCallMessage(null, $tools);
+            return $this->applyUsage(new ToolCallMessage(null, $tools), $this->toolCallUsage);
+        }
+
+        if ($this->isFinalRoundFailing) {
+            throw new RuntimeException(static::ERROR_MESSAGE_FINAL_ROUND_FAILED);
         }
 
         yield new TextChunk(static::MESSAGE_ID, $this->finalAnswer);
 
-        return new AssistantMessage($this->finalAnswer);
+        return $this->applyUsage(new AssistantMessage($this->finalAnswer), $this->finalUsage);
+    }
+
+    protected function applyUsage(Message $message, ?Usage $usage): Message
+    {
+        if ($usage === null) {
+            return $message;
+        }
+
+        return $message->setUsage(new Usage($usage->inputTokens, $usage->outputTokens));
     }
 
     public function getStreamCount(): int

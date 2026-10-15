@@ -19,4 +19,9 @@ interface NeuronAiMessageMapperInterface
     public function mapPromptMessageToUserMessage(PromptMessageTransfer $promptMessageTransfer): UserMessage;
 
     public function mapUsageToUsageTransfer(?Usage $usage): ?UsageTransfer;
+
+    /**
+     * @param array<\NeuronAI\Chat\Messages\Usage|null> $usages
+     */
+    public function mapUsagesToUsageTransfer(array $usages): ?UsageTransfer;
 }

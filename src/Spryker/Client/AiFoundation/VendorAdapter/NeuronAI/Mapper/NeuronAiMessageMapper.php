@@ -47,6 +47,30 @@ class NeuronAiMessageMapper implements NeuronAiMessageMapperInterface
     }
 
     /**
+     * @param array<\NeuronAI\Chat\Messages\Usage|null> $usages
+     */
+    public function mapUsagesToUsageTransfer(array $usages): ?UsageTransfer
+    {
+        $usages = array_filter($usages, static fn (?Usage $usage): bool => $usage !== null);
+
+        if ($usages === []) {
+            return null;
+        }
+
+        $inputTokens = 0;
+        $outputTokens = 0;
+
+        foreach ($usages as $usage) {
+            $inputTokens += $usage->inputTokens;
+            $outputTokens += $usage->outputTokens;
+        }
+
+        return (new UsageTransfer())
+            ->setInputTokens($inputTokens)
+            ->setOutputTokens($outputTokens);
+    }
+
+    /**
      * @return array<\NeuronAI\Chat\Messages\ContentBlocks\ContentBlockInterface>
      */
     protected function buildContentBlocks(PromptMessageTransfer $promptMessageTransfer): array
