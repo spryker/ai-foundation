@@ -12,13 +12,17 @@ namespace Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory;
 use Generated\Shared\Transfer\ChatSessionRequestTransfer;
 use Generated\Shared\Transfer\ChatSessionResponseTransfer;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 
 class GatewayChatHistoryFactory implements GatewayChatHistoryFactoryInterface
 {
     protected const int DEFAULT_CONTEXT_WINDOW = 50000;
 
+    protected const string PROVIDER_CONFIG_KEY_MODEL = 'model';
+
     public function __construct(
-        protected AiFoundationStubInterface $aiFoundationStub
+        protected AiFoundationStubInterface $aiFoundationStub,
+        protected ?ChatHistoryReasoningFilterInterface $chatHistoryReasoningFilter = null
     ) {
     }
 
@@ -31,7 +35,17 @@ class GatewayChatHistoryFactory implements GatewayChatHistoryFactoryInterface
             (string)$chatSessionRequestTransfer->getConversationReference(),
             $this->extractSerializedMessages($chatSessionResponseTransfer),
             $chatSessionResponseTransfer->getContextWindow() ?? static::DEFAULT_CONTEXT_WINDOW,
+            $this->chatHistoryReasoningFilter,
+            $chatSessionResponseTransfer->getAiConfiguration()?->getProviderName(),
+            $this->extractModelName($chatSessionResponseTransfer),
         );
+    }
+
+    protected function extractModelName(ChatSessionResponseTransfer $chatSessionResponseTransfer): ?string
+    {
+        $modelName = $chatSessionResponseTransfer->getAiConfiguration()?->getProviderConfig()[static::PROVIDER_CONFIG_KEY_MODEL] ?? null;
+
+        return is_scalar($modelName) ? (string)$modelName : null;
     }
 
     /**

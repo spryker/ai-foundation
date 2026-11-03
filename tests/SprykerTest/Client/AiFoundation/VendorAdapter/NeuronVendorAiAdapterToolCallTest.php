@@ -13,6 +13,8 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\AiConfigurationTransfer;
 use Generated\Shared\Transfer\AiToolCallTransfer;
 use Generated\Shared\Transfer\ChatSessionResponseTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionRequestTransfer;
+use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
 use Generated\Shared\Transfer\PromptMessageTransfer;
 use Generated\Shared\Transfer\PromptRequestTransfer;
 use NeuronAI\Chat\Messages\Usage;
@@ -28,6 +30,7 @@ use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\StreamChunkMapper;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ClientProviderResolverInterface;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilter;
 use SprykerTest\Client\AiFoundation\AiFoundationClientTester;
 
 /**
@@ -45,6 +48,22 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
     protected const string AI_CONFIGURATION_NAME = 'test_configuration';
 
     protected const string PROVIDER_NAME = 'test_provider';
+
+    protected const string MODEL_NAME = 'test-model';
+
+    protected const string PROVIDER_CONFIG_KEY_MODEL = 'model';
+
+    protected const string MESSAGE_METADATA_KEY_PROVIDER_NAME = 'ai_provider_name';
+
+    protected const string MESSAGE_METADATA_KEY_MODEL_NAME = 'ai_model_name';
+
+    protected const string MESSAGE_KEY_TYPE = 'type';
+
+    protected const string MESSAGE_KEY_ROLE = 'role';
+
+    protected const string MESSAGE_TYPE_TOOL_CALL = 'tool_call';
+
+    protected const string MESSAGE_ROLE_ASSISTANT = 'assistant';
 
     protected const string CONVERSATION_REFERENCE = 'conversation-reference-test';
 
@@ -400,6 +419,45 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
         $this->assertSame(static::TOOL_CALL_OUTPUT_TOKENS, $promptResponseTransfer->getMessageOrFail()->getUsageOrFail()->getOutputTokens());
     }
 
+    public function testGivenToolCallWhenStreamingPromptThenPersistedAssistantMessagesAreMarkedWithProviderAndModel(): void
+    {
+        // Arrange
+        $capturedRequestTransfer = null;
+        $aiFoundationStubMock = $this->createMock(AiFoundationStubInterface::class);
+        $aiFoundationStubMock->method('initChatSession')->willReturn($this->createChatSessionResponseTransfer());
+        $aiFoundationStubMock->method('saveConversationHistoryCollection')
+            ->willReturnCallback(function (ConversationHistoryCollectionRequestTransfer $requestTransfer) use (&$capturedRequestTransfer): ConversationHistoryCollectionResponseTransfer {
+                $capturedRequestTransfer = $requestTransfer;
+
+                return (new ConversationHistoryCollectionResponseTransfer())->setIsSuccessful(true);
+            });
+
+        // Act
+        $this->createAdapterForProvider(
+            new ScriptedToolCallAiProvider([[$this->createTool()]], static::FINAL_ANSWER),
+            aiFoundationStubMock: $aiFoundationStubMock,
+        )->streamPrompt($this->createPromptRequestTransfer());
+
+        // Assert
+        $this->assertNotNull($capturedRequestTransfer);
+        $persistedMessages = json_decode(
+            (string)$capturedRequestTransfer->getConversationHistories()->offsetGet(0)->getOriginalMessages(),
+            true,
+        );
+        $assistantMessages = array_values(array_filter(
+            $persistedMessages,
+            static fn (array $persistedMessage): bool => $persistedMessage[static::MESSAGE_KEY_ROLE] === static::MESSAGE_ROLE_ASSISTANT,
+        ));
+
+        $this->assertCount(2, $assistantMessages);
+        $this->assertSame(static::MESSAGE_TYPE_TOOL_CALL, $assistantMessages[0][static::MESSAGE_KEY_TYPE] ?? null);
+
+        foreach ($assistantMessages as $assistantMessage) {
+            $this->assertSame(static::PROVIDER_NAME, $assistantMessage[static::MESSAGE_METADATA_KEY_PROVIDER_NAME] ?? null);
+            $this->assertSame(static::MODEL_NAME, $assistantMessage[static::MESSAGE_METADATA_KEY_MODEL_NAME] ?? null);
+        }
+    }
+
     protected function createToolPlugin(string $toolName): ToolPluginInterface
     {
         $toolPluginMock = $this->createMock(ToolPluginInterface::class);
@@ -497,17 +555,17 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
         ScriptedToolCallAiProvider $scriptedToolCallAiProvider,
         array $preToolCallPlugins = [],
         array $postToolCallPlugins = [],
-        array $aiToolPlugins = []
+        array $aiToolPlugins = [],
+        ?AiFoundationStubInterface $aiFoundationStubMock = null
     ): NeuronVendorAiAdapter {
-        $aiFoundationStubMock = $this->createMock(AiFoundationStubInterface::class);
-        $aiFoundationStubMock->method('initChatSession')->willReturn($this->createChatSessionResponseTransfer());
+        $aiFoundationStubMock ??= $this->createAiFoundationStubMock();
 
         $clientProviderResolverMock = $this->createMock(ClientProviderResolverInterface::class);
         $clientProviderResolverMock->method('resolve')->willReturn($scriptedToolCallAiProvider);
 
         return new NeuronVendorAiAdapter(
             $aiFoundationStubMock,
-            new GatewayChatHistoryFactory($aiFoundationStubMock),
+            new GatewayChatHistoryFactory($aiFoundationStubMock, new ChatHistoryReasoningFilter()),
             $clientProviderResolverMock,
             new NeuronAiMessageMapper(),
             $this->createMock(ClientNeuronAiToolMapperInterface::class),
@@ -520,6 +578,14 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
         );
     }
 
+    protected function createAiFoundationStubMock(): AiFoundationStubInterface
+    {
+        $aiFoundationStubMock = $this->createMock(AiFoundationStubInterface::class);
+        $aiFoundationStubMock->method('initChatSession')->willReturn($this->createChatSessionResponseTransfer());
+
+        return $aiFoundationStubMock;
+    }
+
     protected function createChatSessionResponseTransfer(): ChatSessionResponseTransfer
     {
         return (new ChatSessionResponseTransfer())
@@ -528,7 +594,7 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
                 (new AiConfigurationTransfer())
                     ->setName(static::AI_CONFIGURATION_NAME)
                     ->setProviderName(static::PROVIDER_NAME)
-                    ->setProviderConfig([]),
+                    ->setProviderConfig([static::PROVIDER_CONFIG_KEY_MODEL => static::MODEL_NAME]),
             );
     }
 }

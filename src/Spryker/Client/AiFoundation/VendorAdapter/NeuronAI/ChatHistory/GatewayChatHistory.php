@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\ConversationHistoryTransfer;
 use NeuronAI\Chat\History\AbstractChatHistory;
 use NeuronAI\Chat\Messages\Message;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 use Spryker\Shared\Log\LoggerTrait;
 use Throwable;
 
@@ -36,11 +37,14 @@ class GatewayChatHistory extends AbstractChatHistory
         protected AiFoundationStubInterface $aiFoundationStub,
         protected string $conversationReference,
         array $serializedMessages,
-        int $contextWindow
+        int $contextWindow,
+        protected ?ChatHistoryReasoningFilterInterface $chatHistoryReasoningFilter = null,
+        protected ?string $providerName = null,
+        protected ?string $modelName = null
     ) {
         parent::__construct($contextWindow);
 
-        $this->history = $this->deserializeMessages($serializedMessages);
+        $this->history = $this->deserializeMessages($this->removeForeignReasoning($serializedMessages));
         $this->bufferedMessages = $this->serializeHistory();
     }
 
@@ -72,6 +76,29 @@ class GatewayChatHistory extends AbstractChatHistory
     protected function clear(): void
     {
         $this->bufferedMessages = [];
+    }
+
+    protected function onNewMessage(Message $message): void
+    {
+        if ($this->chatHistoryReasoningFilter === null || $this->providerName === null) {
+            return;
+        }
+
+        $this->chatHistoryReasoningFilter->markMessageOrigin($message, $this->providerName, $this->modelName);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $serializedMessages
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function removeForeignReasoning(array $serializedMessages): array
+    {
+        if ($this->chatHistoryReasoningFilter === null || $this->providerName === null) {
+            return $serializedMessages;
+        }
+
+        return $this->chatHistoryReasoningFilter->removeForeignReasoning($serializedMessages, $this->providerName, $this->modelName);
     }
 
     /**

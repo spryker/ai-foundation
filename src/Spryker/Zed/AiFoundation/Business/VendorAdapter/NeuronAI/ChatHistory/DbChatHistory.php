@@ -13,6 +13,8 @@ use Generated\Shared\Transfer\ConversationHistoryTransfer;
 use NeuronAI\Chat\Enums\ContentBlockType;
 use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\History\AbstractChatHistory;
+use NeuronAI\Chat\Messages\Message;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationEntityManagerInterface;
 use Spryker\Zed\AiFoundation\Persistence\AiFoundationRepositoryInterface;
@@ -38,6 +40,9 @@ class DbChatHistory extends AbstractChatHistory
         protected string $conversationReference,
         int $contextWindow = 50000,
         protected int $maxAttachmentStorageSizeInBytes = self::DEFAULT_MAX_ATTACHMENT_STORAGE_SIZE_IN_BYTES,
+        protected ?ChatHistoryReasoningFilterInterface $chatHistoryReasoningFilter = null,
+        protected ?string $providerName = null,
+        protected ?string $modelName = null,
     ) {
         parent::__construct($contextWindow);
 
@@ -102,6 +107,29 @@ class DbChatHistory extends AbstractChatHistory
         return strlen((string)($contentBlock['content'] ?? '')) <= $this->maxAttachmentStorageSizeInBytes;
     }
 
+    protected function onNewMessage(Message $message): void
+    {
+        if ($this->chatHistoryReasoningFilter === null || $this->providerName === null) {
+            return;
+        }
+
+        $this->chatHistoryReasoningFilter->markMessageOrigin($message, $this->providerName, $this->modelName);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $messages
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function removeForeignReasoning(array $messages): array
+    {
+        if ($this->chatHistoryReasoningFilter === null || $this->providerName === null) {
+            return $messages;
+        }
+
+        return $this->chatHistoryReasoningFilter->removeForeignReasoning($messages, $this->providerName, $this->modelName);
+    }
+
     protected function clear(): void
     {
         $criteria = (new ConversationHistoryCriteriaTransfer())
@@ -137,6 +165,6 @@ class DbChatHistory extends AbstractChatHistory
 
         $messages = json_decode($messagesJson, true) ?? [];
 
-        $this->history = $this->deserializeMessages($messages);
+        $this->history = $this->deserializeMessages($this->removeForeignReasoning($messages));
     }
 }

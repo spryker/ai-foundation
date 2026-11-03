@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Spryker\Zed\AiFoundation\Business;
 
 use Spryker\Service\AiFoundation\AiFoundationServiceInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilter;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 use Spryker\Zed\AiFoundation\AiFoundationDependencyProvider;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilder;
 use Spryker\Zed\AiFoundation\Business\AiInteractionLog\ContextBuilder\AiInteractionLogContextBuilderInterface;
@@ -134,7 +136,13 @@ class AiFoundationBusinessFactory extends AbstractBusinessFactory
             repository: $this->getRepository(),
             messageMapper: $this->createNeuronAiMessageMapper(),
             config: $this->getConfig(),
+            chatHistoryReasoningFilter: $this->createChatHistoryReasoningFilter(),
         );
+    }
+
+    public function createChatHistoryReasoningFilter(): ChatHistoryReasoningFilterInterface
+    {
+        return new ChatHistoryReasoningFilter();
     }
 
     /**

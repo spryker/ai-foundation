@@ -12,9 +12,13 @@ namespace SprykerTest\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\ConversationHistoryCollectionRequestTransfer;
 use Generated\Shared\Transfer\ConversationHistoryCollectionResponseTransfer;
+use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\ContentBlocks\ReasoningContent;
+use NeuronAI\Chat\Messages\ContentBlocks\TextContent;
 use NeuronAI\Chat\Messages\UserMessage;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\GatewayChatHistory;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilter;
 use SprykerTest\Client\AiFoundation\AiFoundationClientTester;
 
 /**
@@ -36,6 +40,16 @@ class GatewayChatHistoryTest extends Unit
     protected const string MESSAGE_CONTENT = 'Hello there';
 
     protected const int CONTEXT_WINDOW = 50000;
+
+    protected const string PROVIDER_NAME_BEDROCK = 'bedrock';
+
+    protected const string PROVIDER_NAME_OPENAI_RESPONSES = 'openai_responses';
+
+    protected const string MODEL_NAME = 'test-model';
+
+    protected const string REASONING_CONTENT = 'Thinking about the answer';
+
+    protected const string REASONING_SIGNATURE = 'reasoning-signature';
 
     protected AiFoundationClientTester $tester;
 
@@ -182,6 +196,56 @@ class GatewayChatHistoryTest extends Unit
         );
     }
 
+    public function testGivenReasoningOfAnotherProviderWhenConstructingGatewayChatHistoryThenReasoningIsRemoved(): void
+    {
+        // Arrange
+        $originGatewayChatHistory = $this->createProviderAwareGatewayChatHistory(static::PROVIDER_NAME_OPENAI_RESPONSES);
+        $originGatewayChatHistory->addMessage(new UserMessage(static::MESSAGE_CONTENT));
+        $originGatewayChatHistory->addMessage($this->createAssistantMessageWithReasoning());
+
+        // Act
+        $gatewayChatHistory = $this->createProviderAwareGatewayChatHistory(
+            static::PROVIDER_NAME_BEDROCK,
+            $this->serializeMessages($originGatewayChatHistory->getMessages()),
+        );
+
+        // Assert
+        $this->assertCount(2, $gatewayChatHistory->getMessages());
+        $this->assertNull($gatewayChatHistory->getMessages()[1]->getReasoning());
+        $this->assertSame(static::MESSAGE_CONTENT, $gatewayChatHistory->getMessages()[1]->getContent());
+    }
+
+    public function testGivenReasoningOfSameProviderWhenConstructingGatewayChatHistoryThenReasoningIsKept(): void
+    {
+        // Arrange
+        $originGatewayChatHistory = $this->createProviderAwareGatewayChatHistory(static::PROVIDER_NAME_BEDROCK);
+        $originGatewayChatHistory->addMessage(new UserMessage(static::MESSAGE_CONTENT));
+        $originGatewayChatHistory->addMessage($this->createAssistantMessageWithReasoning());
+
+        // Act
+        $gatewayChatHistory = $this->createProviderAwareGatewayChatHistory(
+            static::PROVIDER_NAME_BEDROCK,
+            $this->serializeMessages($originGatewayChatHistory->getMessages()),
+        );
+
+        // Assert
+        $reasoningContent = $gatewayChatHistory->getMessages()[1]->getReasoning();
+        $this->assertNotNull($reasoningContent);
+        $this->assertSame(static::REASONING_SIGNATURE, $reasoningContent->id);
+    }
+
+    public function testGivenReasoningWithoutOriginWhenConstructingGatewayChatHistoryThenReasoningIsRemoved(): void
+    {
+        // Arrange
+        $serializedMessages = $this->serializeMessages([$this->createAssistantMessageWithReasoning()]);
+
+        // Act
+        $gatewayChatHistory = $this->createProviderAwareGatewayChatHistory(static::PROVIDER_NAME_BEDROCK, $serializedMessages);
+
+        // Assert
+        $this->assertNull($gatewayChatHistory->getMessages()[0]->getReasoning());
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -211,5 +275,39 @@ class GatewayChatHistoryTest extends Unit
     protected function createAiFoundationStubMock(): AiFoundationStubInterface
     {
         return $this->createMock(AiFoundationStubInterface::class);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $serializedMessages
+     */
+    protected function createProviderAwareGatewayChatHistory(string $providerName, array $serializedMessages = []): GatewayChatHistory
+    {
+        return new GatewayChatHistory(
+            $this->createAiFoundationStubMock(),
+            static::CONVERSATION_REFERENCE,
+            $serializedMessages,
+            static::CONTEXT_WINDOW,
+            new ChatHistoryReasoningFilter(),
+            $providerName,
+            static::MODEL_NAME,
+        );
+    }
+
+    protected function createAssistantMessageWithReasoning(): AssistantMessage
+    {
+        return new AssistantMessage([
+            new ReasoningContent(static::REASONING_CONTENT, static::REASONING_SIGNATURE),
+            new TextContent(static::MESSAGE_CONTENT),
+        ]);
+    }
+
+    /**
+     * @param array<\NeuronAI\Chat\Messages\Message> $messages
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeMessages(array $messages): array
+    {
+        return json_decode((string)json_encode($messages), true);
     }
 }

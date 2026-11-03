@@ -8,6 +8,7 @@
 namespace Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistoryResolver;
 
 use NeuronAI\Chat\History\ChatHistoryInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 use Spryker\Zed\AiFoundation\AiFoundationConfig;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\ChatHistory\DbChatHistory;
 use Spryker\Zed\AiFoundation\Business\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapperInterface;
@@ -23,26 +24,35 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
         protected AiFoundationRepositoryInterface $repository,
         protected NeuronAiMessageMapperInterface $messageMapper,
         protected AiFoundationConfig $config,
+        protected ?ChatHistoryReasoningFilterInterface $chatHistoryReasoningFilter = null,
     ) {
     }
 
     /**
      * @param array<string, mixed> $chatHistoryConfiguration
      */
-    public function resolve(?string $conversationReference, array $chatHistoryConfiguration): ?ChatHistoryInterface
-    {
+    public function resolve(
+        ?string $conversationReference,
+        array $chatHistoryConfiguration,
+        ?string $providerName = null,
+        ?string $modelName = null,
+    ): ?ChatHistoryInterface {
         if ($conversationReference === null) {
             return null;
         }
 
-        return $this->createDbChatHistory($conversationReference, $chatHistoryConfiguration);
+        return $this->createDbChatHistory($conversationReference, $chatHistoryConfiguration, $providerName, $modelName);
     }
 
     /**
      * @param array<string, mixed> $chatHistoryConfiguration
      */
-    protected function createDbChatHistory(string $conversationReference, array $chatHistoryConfiguration): DbChatHistory
-    {
+    protected function createDbChatHistory(
+        string $conversationReference,
+        array $chatHistoryConfiguration,
+        ?string $providerName = null,
+        ?string $modelName = null,
+    ): DbChatHistory {
         $contextWindow = $chatHistoryConfiguration[static::CONTEXT_WINDOW] ?? $this->config->getConversationHistoryContextWindow();
 
         return new DbChatHistory(
@@ -51,6 +61,9 @@ class DbChatHistoryResolver implements ChatHistoryResolverInterface
             messageMapper: $this->messageMapper,
             conversationReference: $conversationReference,
             contextWindow: $contextWindow,
+            chatHistoryReasoningFilter: $this->chatHistoryReasoningFilter,
+            providerName: $providerName,
+            modelName: $modelName,
         );
     }
 }

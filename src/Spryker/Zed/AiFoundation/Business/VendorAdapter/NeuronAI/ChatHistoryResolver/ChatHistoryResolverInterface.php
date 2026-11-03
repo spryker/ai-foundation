@@ -14,5 +14,10 @@ interface ChatHistoryResolverInterface
     /**
      * @param array<string, mixed> $chatHistoryConfiguration
      */
-    public function resolve(?string $conversationReference, array $chatHistoryConfiguration): ?ChatHistoryInterface;
+    public function resolve(
+        ?string $conversationReference,
+        array $chatHistoryConfiguration,
+        ?string $providerName = null,
+        ?string $modelName = null,
+    ): ?ChatHistoryInterface;
 }

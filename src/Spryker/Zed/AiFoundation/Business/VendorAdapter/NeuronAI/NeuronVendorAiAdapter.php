@@ -110,13 +110,18 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
         $message = $this->messageMapper->mapPromptMessageToProviderMessage($promptRequest->getPromptMessageOrFail());
         $maxRetries = $promptRequest->getMaxRetries() ?? 1;
 
-        $chatHistoryConfig = $resolvedAiConfiguration[static::AI_CONVERSATION_HISTORY_CONFIG] ?? [];
-        $chatHistory = $this->chatHistoryResolver->resolve($promptRequest->getConversationReference(), $chatHistoryConfig);
-
-        $structuredSchema = $promptRequest->getStructuredMessage();
-
         $providerName = $resolvedAiConfiguration[static::AI_PROVIDER_NAME];
         $modelName = $resolvedAiConfiguration[static::AI_PROVIDER_CONFIG][static::AI_PROVIDER_CONFIG_MODEL] ?? null;
+
+        $chatHistoryConfig = $resolvedAiConfiguration[static::AI_CONVERSATION_HISTORY_CONFIG] ?? [];
+        $chatHistory = $this->chatHistoryResolver->resolve(
+            $promptRequest->getConversationReference(),
+            $chatHistoryConfig,
+            (string)$providerName,
+            is_string($modelName) && $modelName !== '' ? $modelName : null,
+        );
+
+        $structuredSchema = $promptRequest->getStructuredMessage();
         $startTime = microtime(true);
 
         $promptResponseTransfer = $structuredSchema instanceof AbstractTransfer

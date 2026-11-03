@@ -28,6 +28,8 @@ use Spryker\Client\AiFoundation\Zed\AiFoundationStub;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
 use Spryker\Client\Kernel\AbstractFactory;
 use Spryker\Client\ZedRequest\ZedRequestClientInterface;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilter;
+use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilterInterface;
 
 /**
  * @method \Spryker\Client\AiFoundation\AiFoundationConfig getConfig()
@@ -46,7 +48,15 @@ class AiFoundationFactory extends AbstractFactory
 
     public function createGatewayChatHistoryFactory(): GatewayChatHistoryFactoryInterface
     {
-        return new GatewayChatHistoryFactory($this->createZedAiFoundationStub());
+        return new GatewayChatHistoryFactory(
+            $this->createZedAiFoundationStub(),
+            $this->createChatHistoryReasoningFilter(),
+        );
+    }
+
+    public function createChatHistoryReasoningFilter(): ChatHistoryReasoningFilterInterface
+    {
+        return new ChatHistoryReasoningFilter();
     }
 
     public function getVendorAdapterPlugin(): VendorProviderPluginInterface
