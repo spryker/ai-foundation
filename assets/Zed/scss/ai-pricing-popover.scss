@@ -5,11 +5,11 @@
     cursor: help;
     margin-left: 4px;
     line-height: 1;
-    color: var(--bs-gray-500, #9ca3af);
+    color: var(--ins-gray-500, #9ca3af);
 
     &:hover,
     &:focus {
-        color: var(--bs-gray-700, #495057);
+        color: var(--ins-gray-700, #495057);
         outline: none;
     }
 
@@ -29,12 +29,12 @@
     width: 340px;
     padding: 14px 12px;
     background: #fff;
-    border: 1px solid var(--bs-border-color, #e5e7eb);
+    border: 1px solid var(--ins-border-color, #e5e7eb);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
     font-size: 13px;
     line-height: 1.45;
-    color: var(--bs-gray-700, #495057);
+    color: var(--ins-gray-700, #495057);
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.1s ease-in-out;
@@ -62,7 +62,7 @@
 
     &__body {
         margin: 0;
-        color: var(--bs-gray-700, #495057);
+        color: var(--ins-gray-700, #495057);
     }
 
     &__divider {
