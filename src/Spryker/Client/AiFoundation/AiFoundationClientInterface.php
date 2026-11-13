@@ -52,7 +52,7 @@ interface AiFoundationClientInterface
      * - Overrides the resolved system prompt with `PromptRequestTransfer.systemPrompt` when it is not empty.
      * - Loads the chat history of `PromptRequestTransfer.conversationReference` and appends the request prompt message to it.
      * - Calls the AI provider directly from the Client layer; makes no Zed call for the provider itself.
-     * - Before streaming, provides the model with the `\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface` plugins whose names match `PromptRequestTransfer.toolNames`.
+     * - Before streaming, provides the model with the `\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface` plugins whose names match `PromptRequestTransfer.toolNames`.
      * - Ignores `PromptRequestTransfer.toolSetNames`.
      * - Returns an unsuccessful response without calling the AI provider when any of `PromptRequestTransfer.toolNames` matches no registered tool plugin.
      * - Runs a bounded tool-call loop: executes requested tools, feeds their results back and re-streams until the model answers or the iteration cap is reached.

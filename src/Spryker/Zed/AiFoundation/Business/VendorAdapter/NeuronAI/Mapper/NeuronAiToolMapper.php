@@ -11,7 +11,7 @@ use NeuronAI\Tools\PropertyType;
 use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolInterface;
 use NeuronAI\Tools\ToolProperty;
-use Spryker\Shared\AiFoundation\Tools\ToolParameterType;
+use Spryker\Shared\AiFoundationExtension\Tools\ToolParameterType;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolParameterInterface;
 use Spryker\Zed\AiFoundation\Dependency\Tools\ToolPluginInterface;
 

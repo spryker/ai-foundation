@@ -22,7 +22,7 @@ interface ToolParameterInterface
 
     /**
      * Specification:
-     * - Returns the parameter type as one of the `\Spryker\Shared\AiFoundation\Tools\ToolParameterType` values.
+     * - Returns the parameter type as one of the `\Spryker\Shared\AiFoundationExtension\Tools\ToolParameterType` values.
      * - Falls back to `ToolParameterType::String` when the returned value is not a `ToolParameterType` value.
      *
      * @api

@@ -92,7 +92,7 @@ class AiFoundationFactory extends AbstractFactory
     }
 
     /**
-     * @return array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface>
+     * @return array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface>
      */
     public function getAiToolPlugins(): array
     {

@@ -13,13 +13,13 @@ use NeuronAI\Tools\PropertyType;
 use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolInterface;
 use NeuronAI\Tools\ToolProperty;
-use Spryker\Client\AiFoundation\Dependency\Tools\ToolParameterInterface;
-use Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface;
+use Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolParameterInterface;
+use Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface;
 
 class ClientNeuronAiToolMapper implements ClientNeuronAiToolMapperInterface
 {
     /**
-     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $tools
+     * @param array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface> $tools
      *
      * @return array<\NeuronAI\Tools\ToolInterface>
      */

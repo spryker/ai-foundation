@@ -37,7 +37,7 @@ interface AiFoundationFacadeInterface
      * - Validates that required configuration keys (`provider_name` and `provider_config`) are present and not empty.
      * - Resolves the AI provider instance based on the configuration.
      * - Applies system prompt from configuration if available.
-     * - Gets requested tool sets from the stack of `\Spryker\Client\AiFoundation\Dependency\Tools\ToolSetPluginInterface` if `PromptRequestTransfer.toolSetNames` is provided.
+     * - Gets requested tool sets from the stack of `\Spryker\Zed\AiFoundation\Dependency\Tools\ToolSetPluginInterface` if `PromptRequestTransfer.toolSetNames` is provided.
      * - Extracts tools from the stacks and provides them to the AI provider.
      * - Maps the prompt message from `PromptRequestTransfer.promptMessage` to provider-specific format.
      * - If `PromptRequestTransfer.structuredMessage` is provided, executes the chat request with structured response format.

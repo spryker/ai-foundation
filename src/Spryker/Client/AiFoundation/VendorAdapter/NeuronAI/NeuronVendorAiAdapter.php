@@ -27,7 +27,6 @@ use NeuronAI\Chat\Messages\ToolResultMessage;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolInterface;
-use Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface;
 use Spryker\Client\AiFoundation\Exception\ToolNotRegisteredException;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\GatewayChatHistory;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\GatewayChatHistoryFactoryInterface;
@@ -37,6 +36,7 @@ use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\StreamChunkMapperI
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ClientProviderResolverInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\VendorAdapterInterface;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface;
 use Spryker\Shared\AiFoundation\Stream\PromptStreamChunkType;
 use Spryker\Shared\Log\LoggerTrait;
 use Throwable;
@@ -74,7 +74,7 @@ class NeuronVendorAiAdapter implements VendorAdapterInterface
     protected string $accumulatedContent = '';
 
     /**
-     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
+     * @param array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PostPromptPluginInterface> $postPromptPlugins
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins

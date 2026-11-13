@@ -22,7 +22,6 @@ use NeuronAI\Tools\Tool;
 use RuntimeException;
 use Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface;
 use Spryker\Client\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface;
-use Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\GatewayChatHistoryFactory;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\ClientNeuronAiToolMapperInterface;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\NeuronAiMessageMapper;
@@ -30,6 +29,7 @@ use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper\StreamChunkMapper;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\NeuronVendorAiAdapter;
 use Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\ProviderResolver\ClientProviderResolverInterface;
 use Spryker\Client\AiFoundation\Zed\AiFoundationStubInterface;
+use Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface;
 use Spryker\Shared\AiFoundation\VendorAdapter\NeuronAI\ChatHistory\ChatHistoryReasoningFilter;
 use SprykerTest\Client\AiFoundation\AiFoundationClientTester;
 
@@ -516,7 +516,7 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
      * @param array<int, array<int, \NeuronAI\Tools\ToolInterface>> $toolCallRounds
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins
-     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
+     * @param array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
      */
     protected function createAdapter(
         array $toolCallRounds = [],
@@ -549,7 +549,7 @@ class NeuronVendorAiAdapterToolCallTest extends Unit
     /**
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PreToolCallPluginInterface> $preToolCallPlugins
      * @param array<\Spryker\Client\AiFoundation\Dependency\Plugin\PostToolCallPluginInterface> $postToolCallPlugins
-     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
+     * @param array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface> $aiToolPlugins
      */
     protected function createAdapterForProvider(
         ScriptedToolCallAiProvider $scriptedToolCallAiProvider,

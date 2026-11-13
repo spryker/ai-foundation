@@ -12,7 +12,7 @@ namespace Spryker\Client\AiFoundation\VendorAdapter\NeuronAI\Mapper;
 interface ClientNeuronAiToolMapperInterface
 {
     /**
-     * @param array<\Spryker\Client\AiFoundation\Dependency\Tools\ToolPluginInterface> $tools
+     * @param array<\Spryker\Client\AiFoundationExtension\Dependency\Tools\ToolPluginInterface> $tools
      *
      * @return array<\NeuronAI\Tools\ToolInterface>
      */
